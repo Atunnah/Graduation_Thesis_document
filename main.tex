@@ -1,0 +1,274 @@
+\documentclass[oneside]{report}
+\usepackage[utf8]{inputenc}
+\usepackage
+[T5]{fontenc}
+\usepackage{graphicx}
+\usepackage{nameref}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{spverbatim}
+\usepackage[bottom]{footmisc}
+\usepackage{lscape}
+%\usepackage{algorithmic}
+\bibliographystyle{unsrt}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
+
+% set font, font size and spacing
+\usepackage{times}
+\usepackage{scrextend}
+\changefontsizes{11pt}
+\renewcommand{\baselinestretch}{1.1}
+% section spacing
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.5\baselineskip}{0.2\baselineskip}
+\titlespacing*{\subsection}{0pt}{0.4\baselineskip}{0.2\baselineskip}
+
+% setup page layout
+\usepackage[a4paper,left=30mm,top=20mm,bottom=25mm,right=20mm,]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usetikzlibrary{decorations.pathmorphing}
+
+% Acronyms Auto
+\usepackage[nopostdot,toc,acronym,nomain,nonumberlist]{glossaries}
+\makeglossaries
+\setacronymstyle{long-short}
+\loadglsentries[acronym]{FrontMatter/Acronyms}
+\setlength{\glsdescwidth}{0.7\linewidth}
+
+% natbib
+% if use natbib, please comment out the cite
+% \usepackage[numbers, square, round]{natbib}
+
+\usepackage[
+    bibstyle=bwl-FU,
+    backend=biber,
+    doi=false,isbn=false,url=false,eprint=false,
+    citestyle=ieee,
+    style = numeric,
+    maxcitenames=2,
+    maxbibnames=3,
+]{biblatex}
+\addbibresource{references.bib}
+
+% Citation
+% \usepackage{cite}
+
+% % prevent text overflow
+% \usepackage{babel}
+% \newcommand\fh{\babelhyphen{hard}}
+
+% Change indent
+% \usepackage{indentfirst} % indent also after section titles
+\setlength{\parindent}{1cm}
+\usepackage{enumitem}
+\setlist{leftmargin=1cm}
+
+% paragraph spacing
+\setlength{\parskip}{0.5em}
+
+% Change enumerate label
+\usepackage{enumitem}
+
+% Page numbering at the center top of page
+% \usepackage{fancyhdr} % Custom headers and footers
+% \pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+% \fancyhead[L]{}% Empty left header
+% \fancyhead[C]{\thepage} % Page numbering for center header  
+% \fancyhead[R]{}% Empty right header
+% \fancyfoot[L]{}% Empty left footer
+% \fancyfoot[C]{}% Empty center footer
+% \fancyfoot[R]{}% Empty left footer
+
+% Math equation
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+% Table
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{bigstrut}
+
+% Cover
+\usepackage{pdfpages}
+
+% Subfigure
+\usepackage{caption}
+\usepackage{subcaption}
+
+% pstricks fig
+\usepackage{epsfig}
+
+% Table of Contents
+\usepackage[hidelinks]{hyperref}
+% Uncomment if you want leading dot for chapter
+\usepackage{tocloft}
+\renewcommand{\cftpartleader}{\cftdotfill{\cftdotsep}} % for parts
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}} % for chapters
+
+%preamble auto add toc
+\usepackage{tocbibind}
+
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\usepackage[export]{adjustbox}  % Put this in your preamble
+
+% table fixed width column
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\title{HaUI Thesis}
+\author{Nguyen Tuan Anh}
+\date{May 2026}
+
+\begin{document}
+%---------------------------------------------
+% Front Matter
+%---------------------------------------------
+\begin{titlepage}
+    \begin{tikzpicture}[overlay,remember picture]
+        \draw [line width=3pt]
+            ($ (current page.north west) + (2.0cm,-2.0cm) $)
+            rectangle
+            ($ (current page.south east) + (-1.5cm,1.8cm) $);
+        \draw [line width=1pt]
+            ($ (current page.north west) + (2.15cm,-2.15cm) $)
+            rectangle
+            ($ (current page.south east) + (-1.65cm,1.95cm) $); 
+    \end{tikzpicture}
+    
+    \begin{center}
+        \vspace*{1cm}
+        \large
+        \textbf{HANOI UNIVERSITY OF INDUSTRY \\
+        SCHOOL OF INFORMATION & COMMUNICATIONS TECHNOLOGY}
+
+        \vspace{1.5cm}
+        \includegraphics[width=0.6\textwidth]{FrontMatter/sict.png}
+            
+        \vspace{1.5cm}
+        \large
+        \textbf{NGUYEN TUAN ANH}
+            
+        \vspace{1.5cm}
+        \large
+        \textbf{OPTIMIZING A CASCADED DEEP LEARNING ARCHITECTURE FOR VIETNAMESE TEXT RECOGNITION SYSTEM FROM IMAGES USING RT-DETR AND PARSeq\\}   
+        \vspace{1.5cm}
+        \large
+        \textbf{BACHELOR THESIS \\
+        Major}: Information Technology       
+
+        \vspace{1cm}
+        \textbf{Supervisor: Assoc. Prof. Dr. Nguyen Thi Kim Son} 
+        
+        \vfill
+        \large
+        \textbf{HA NOI - 2026}
+    \end{center}
+\end{titlepage}
+
+\begin{titlepage}
+    \begin{tikzpicture}[overlay,remember picture]
+        \draw [line width=3pt]
+            ($ (current page.north west) + (2.0cm,-2.0cm) $)
+            rectangle
+            ($ (current page.south east) + (-1.5cm,1.8cm) $);
+        \draw [line width=1pt]
+            ($ (current page.north west) + (2.15cm,-2.15cm) $)
+            rectangle
+            ($ (current page.south east) + (-1.65cm,1.95cm) $); 
+    \end{tikzpicture}
+    
+    \begin{center}
+        \vspace*{1cm}
+        \large
+        \textbf{HANOI UNIVERSITY OF INDUSTRY \\
+        SCHOOL OF INFORMATION & COMMUNICATIONS TECHNOLOGY}
+
+        \vspace{3cm}
+        \large
+        \textbf{NGUYEN TUAN ANH}
+            
+        \vspace{1.5cm}
+        
+        \textbf{OPTIMIZING A CASCADED DEEP LEARNING ARCHITECTURE FOR VIETNAMESE TEXT RECOGNITION SYSTEM FROM IMAGES USING RT-DETR AND PARSeq\\}
+            
+        \vspace{2.5cm}
+        \large
+        \textbf{BACHELOR THESIS \\
+        Major}: Information Technology       
+
+        \vspace{1cm}
+        \textbf{Supervisor: Assoc. Prof. Dr. Nguyen Thi Kim Son} 
+            
+        \vfill
+        \large
+        \textbf{HA NOI - 2026}
+    \end{center}
+\end{titlepage}
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+\include{FrontMatter/Declaration}
+\include{FrontMatter/supervisor}
+% \include{FrontMatter/Publications}
+\include{FrontMatter/Acknowledgements}
+\include{FrontMatter/Abstract}
+\include{FrontMatter/tomtat}
+
+% Show ToC and change title to Table of Contents
+\setcounter{secnumdepth}{3}
+\renewcommand{\contentsname}{Table of Contents}
+\tableofcontents
+
+% Show Acronyms and add it to ToC
+\printglossary[title={Acronyms},type=acronym,style=long]
+\clearpage
+
+% Show list of 
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+% \include{FrontMatter/Abstract}
+
+%--------------------------------------------- 
+% Main content
+%---------------------------------------------
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\include{Chapter1/chapter1}
+\include{Chapter2/chapter2}
+% \include{Background/background}
+\include{Chapter3/chapter3}
+\include{Chapter4/chapter4}
+\include{Chapter5/chapter5}
+% \include{Chapter6/chapter6}
+
+
+%--------------------------------------------- 
+% References
+%---------------------------------------------
+% \bibliographystyle{IEEEtranSN}
+% \bibliographystyle{unsrt}
+\renewcommand\bibname{References}
+% \bibliography{references.bib} % Path to your references.bib file
+\printbibliography
+%--------------------------------------------- 
+% Appendix
+%---------------------------------------------
+% \appendix
+% \include{Appendix/appendix1}
+\end{document}

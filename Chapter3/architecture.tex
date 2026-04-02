@@ -1,0 +1,14 @@
+\section{Proposed Cascaded Deep Learning Architecture Overview}
+Presents the overall two-stage cascaded architecture, illustrating how RT-DETR and PARSeq are connected and why a cascaded design is chosen over end-to-end approaches.
+
+\subsection{End-to-End Pipeline Design}
+
+Details the full processing flow from input image to recognized text, including all intermediate steps and decision points within the pipeline.
+
+\subsection{Inter-stage Data Flow and Cropping Strategy}
+
+Explains how bounding box outputs from RT-DETR are used to crop text regions and prepare them as inputs for PARSeq, including padding and resizing strategies.
+
+\subsection{Error Propagation Analysis across Stages}
+
+Analyzes how detection errors from Stage 1 affect recognition quality in Stage 2, identifying the main failure modes and bottlenecks of the cascaded design.
