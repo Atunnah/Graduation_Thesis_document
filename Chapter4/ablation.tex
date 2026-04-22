@@ -1,1 +1,39 @@
 \section{Ablation Study}
+\subsection{Effect of GWD Loss and Sine-Cosine Angle Encoding}
+
+To quantify the contribution of the GWD loss and sine-cosine angle encoding to detection performance, an ablation experiment is conducted by training variants of the RT-DETR model with progressive removal of these components. Three configurations are evaluated: the full model with GWD loss and sine-cosine encoding; a variant retaining the angle head but replacing GWD with smooth-L1 loss on scalar angle regression; and the base RT-DETR model with no angle head, producing axis-aligned detections only.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lccccc}
+\hline
+\textbf{Configuration} & \textbf{Angle Head} & \textbf{GWD Loss} & \textbf{F1@.50} & \textbf{F1@.75} & \textbf{mAP.5:.95} \\
+\hline
+RT-DETR + GWD + sincos (full) & \checkmark & \checkmark & 0.5014 & 0.1876 & 0.1467 \\
+RT-DETR + L1 angle & \checkmark & $\times$ & \textit{(to be filled)} & \textit{(to be filled)} & \textit{(to be filled)} \\
+RT-DETR baseline (no angle) & $\times$ & $\times$ & \textit{(to be filled)} & \textit{(to be filled)} & \textit{(to be filled)} \\
+\hline
+\end{tabular}
+\caption{Ablation study on the contribution of the angle head and GWD loss to detection performance}
+\label{tab:ablation_detection}
+\end{table}
+
+\subsection{Effect of Vietnamese Vocabulary Extension on Recognition}
+
+To assess the contribution of the extended Vietnamese character set to recognition accuracy, the fine-tuned PARSeq model is compared against a variant initialized from the same pretrained checkpoint but fine-tuned with the original 94-character ASCII vocabulary, forcing all Vietnamese composite characters to be approximated by their closest ASCII equivalents at decoding time.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Configuration} & \textbf{CER (\%)} $\downarrow$ & \textbf{WER (\%)} $\downarrow$ \\
+\hline
+PARSeq + Vietnamese vocab (full) & \textbf{10.18} & \textbf{34.71} \\
+PARSeq + ASCII vocab only & \textit{(to be filled)} & \textit{(to be filled)} \\
+\hline
+\end{tabular}
+\caption{Ablation study on the effect of Vietnamese vocabulary extension}
+\label{tab:ablation_vocab}
+\end{table}

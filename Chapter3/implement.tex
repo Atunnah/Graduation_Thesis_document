@@ -1,10 +1,88 @@
 \section{System Implementation}
-
 \subsection{Frameworks, Libraries and Environment Setup}
-Lists the software frameworks (e.g., PyTorch, Hugging Face, OpenCV), hardware configurations, and environment setup used throughout the project.
+The Vietnamese OCR system is implemented entirely in Python 3.10 and relies on a carefully selected stack of open-source frameworks that collectively handle neural network training, image processing, and inference orchestration. Table \ref{tab:frameworks} summarizes the principal software dependencies used across the detection and recognition pipelines.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\begin{tabular}{lll}
+\hline
+\textbf{Library} & \textbf{Role} & \textbf{Used In} \\
+\hline
+PyTorch & Deep learning framework, tensor operations & Both stages \\
+Hugging Face Transformers & RT-DETR V2 model loading and processor & Detection \\
+PyTorch Lightning & PARSeq training orchestration & Recognition training \\
+torchvision & Rotated IoU, image transforms & Both stages \\
+torchmetrics & CER, WER, mAP evaluation metrics & Both stages \\
+Albumentations & Data augmentation pipeline & Detection training \\
+OpenCV (cv2) & Perspective warp, image I/O & Both stages \\
+Pillow (PIL) & Image rendering, synthetic data generation & Both stages \\
+NumPy & Array operations, geometric transforms & Both stages \\
+SciPy & Hungarian matching (\texttt{linear\_sum\_assignment}) & Detection training \\
+Weights and Biases & Experiment tracking and logging & Both stages \\
+PyYAML & Configuration file parsing & Both stages \\
+\hline
+\end{tabular}
+\caption{Principal software frameworks and libraries used in the Vietnamese OCR system}
+\label{tab:frameworks}
+\end{table}
+
+The detection model is loaded and served through the Hugging Face Transformers library \cite{Wolf2020}, which provides the \texttt{RTDetrV2ForObjectDetection} architecture and the \texttt{AutoImageProcessor} for standardized input preprocessing. This integration allows the official pretrained model weights of the \texttt{PekingU/rtdetr\_v2\_r50vd} checkpoint to be loaded directly from the Hugging Face model hub and fine-tuned using the standard \texttt{Trainer} API, substantially reducing boilerplate code for training loop management, evaluation scheduling, and checkpoint saving. The auxiliary angle regression head is appended as a custom \texttt{nn.ModuleList} attached to the base detector, with weight loading handled through a custom remapping layer that reconciles naming differences between the pretrained checkpoint format and the extended model architecture.
+
+The recognition model is built on the original PARSeq implementation from the \texttt{strhub} library \cite{Bautista2022}, which provides the ViT encoder, the permutation-based autoregressive decoder, and the tokenizer. Training is orchestrated through PyTorch Lightning \cite{Falcon2019}, which handles distributed training, automatic mixed precision, gradient clipping, and callback management. Experiment metrics including training loss, validation loss, Character Error Rate, and Word Error Rate are logged to Weights and Biases at each epoch.
+
+The geometric operations required for oriented bounding box processing, including perspective crop computation and rotated NMS, rely on the standard OpenCV functions \texttt{getPerspectiveTransform} and \texttt{warpPerspective} alongside \texttt{torchvision.ops.box\_iou\_rotated}. Both modules are executed on a single NVIDIA GPU, with CUDA device selection managed by explicitly configuring the \texttt{CUDA\_VISIBLE\_DEVICES} environment variable set prior to framework initialization to avoid device conflicts between the two model components.
 
 \subsection{Model Integration and Component Connection}
-Describes how RT-DETR and PARSeq are integrated as independent components within the system, including how their interfaces are designed to connect, i.e., how the bounding box outputs of the detector are passed as inputs to the recognizer, and how the two modules communicate within a unified inference pipeline.
+The two model components, the RT-DETR detector and the PARSeq recognizer, are implemented as independent, self-contained Python classes with well-defined interfaces, allowing them to be loaded, tested, and upgraded independently before being connected into the unified inference pipeline. This modular design directly reflects the cascaded architecture described in Section 3.1 and is a deliberate engineering choice that facilitates component-level debugging and future replacement of either stage.
+
+The detector is encapsulated in the \texttt{LineDetector} class, which wraps the extended \texttt{\_RTDetrV2LineDetector} model. At instantiation time, \texttt{LineDetector} loads the fine-tuned model weights from a checkpoint directory, reconstructs the angle head from the saved state dictionary, and initializes the Hugging Face image processor. The class exposes a single public method \texttt{predict(image, conf\_threshold, iou\_threshold)}, which accepts a PIL \texttt{Image} object and returns a dictionary containing four fields: \texttt{boxes\_xyxy} (a tensor of axis-aligned bounding box coordinates in pixel space), \texttt{scores} (detection confidence scores), \texttt{angles} (predicted orientation angles in degrees derived from the sine-cosine head outputs via \texttt{atan2}), and \texttt{orig\_size} (the original image dimensions). This output contract defines the inter-stage interface that the pipeline layer consumes.
+
+The recognizer is encapsulated in the \texttt{TextRecognizer} class, which loads the fine-tuned PARSeq checkpoint, reconstructs the extended Vietnamese tokenizer from the character set specified in the inference configuration file, and composes the preprocessing transform pipeline. The class exposes a single public method \texttt{predict(image)}, which accepts a PIL \texttt{Image} object containing a single rectified text line crop and returns the decoded Unicode string. Internally, the method applies the \texttt{ResizeKeepRatioPad} transform to resize the input to $48 \times 1024$ pixels with aspect-ratio-preserving padding, normalizes pixel values using ImageNet statistics, and forwards the tensor through the PARSeq model in autoregressive decoding mode. The tokenizer's \texttt{decode} method strips the begin-of-sequence, end-of-sequence, and padding tokens from the output logit sequence before returning the final string.
+
+The connection between detector and recognizer is implemented in \texttt{pipeline.py}, which instantiates both classes and coordinates the inter-stage data flow. As illustrated in Figure \ref{fig:proposed_cascaded}, the pipeline receives the detector's bounding box output and for each detected region computes the four corners of the oriented rectangle, applies \texttt{cv2.getPerspectiveTransform} to produce an upright crop, and passes the crop directly to the recognizer's \texttt{predict} method. The interface between the two components is thus a sequence of PIL \texttt{Image} objects, one per detected text line, with no shared state or memory between the two model instances.
 
 \subsection{Running the System End-to-End}
-Explains how the integrated system is executed in practice: launching the pipeline, feeding input images, and obtaining recognized Vietnamese text output - covering both CLI usage and the interactive demo interface.
+The complete OCR pipeline is executed through a single command-line entry point implemented in \texttt{pipeline.py}, which accepts configuration arguments specifying the input image path, the detection engine, model checkpoint paths, and the output directory. The detection stage utilizes the custom RT-DETR oriented detector trained in this work, while the recognition stage employs the fine-tuned Vietnamese PARSeq model. 
+
+A representative command-line invocation of the pipeline is as follows:
+\begin{verbatim}
+python pipeline.py \
+    --image_path  path/to/input.png \
+    --det_engine  rtdetr \
+    --det_model   path/to/rtdetr_checkpoint/ \
+    --rec_model   path/to/parseq_checkpoint.ckpt \
+    --rec_config  path/to/infer_config.yaml \
+    --output_dir  ./pipeline_output
+\end{verbatim}
+
+Upon execution, the pipeline performs the following sequence of operations. Both model components are loaded and moved to the available CUDA device. The input image is opened and converted to RGB format. The detector's \texttt{predict} method is called with a default confidence threshold of 0.5 and an IoU threshold of 0.5 for NMS. The surviving detections are sorted by vertical position and grouped into logical text lines using the 40\% vertical overlap criterion described in Section \ref{sec:end_to_end_pipeline_design}. For each detection within each group, sorted left to right, the perspective crop is computed and passed to the recognizer. The recognized strings from all detections within a logical line are joined with tab separators to preserve column structure in tabular documents.
+
+Two output files are written to the specified output directory. The first is a Markdown file containing the full OCR transcript, with one logical text line per output line and tab-separated fields for multi-column regions. The second is a visualization image showing the original document with detected oriented bounding boxes drawn in red and recognized text strings overlaid in blue above each detection, providing a visual quality check of both detection and recognition results.
+
+\begin{algorithm}[ht]
+\caption{End-to-End OCR Pipeline Execution}
+\label{alg:pipeline_execution}
+\begin{algorithmic}[1]
+\Statex \textbf{Input:} Image path $image\_path$, Checkpoint directory $ckpt\_dir$, Model path $model\_path$, Config path $cfg\_path$, Output directory $out\_dir$
+\Statex \textbf{Output:} Markdown transcript and visualization image
+\State $detector \gets \text{LineDetector}(ckpt\_dir, device)$
+\State $recognizer \gets \text{TextRecognizer}(model\_path, cfg\_path)$
+\State $image \gets \text{PIL.open}(image\_path)\text{.convert("RGB")}$
+\State $det \gets detector.\text{predict}(image, conf=0.5, iou=0.5)$
+\State $boxes, angles, scores \gets det[\text{"boxes\_xyxy"}], det[\text{"angles"}], det[\text{"scores"}]$
+\State $groups \gets \text{group\_by\_line}(boxes, angles, \text{overlap\_threshold}=0.4)$
+\State $results \gets [\,]$
+\For{\textbf{each} $group$ \textbf{in} $groups$ (sorted top-to-bottom)}
+    \State $line\_texts \gets [\,]$
+    \For{\textbf{each} $(box, angle)$ \textbf{in} $group$ (sorted left-to-right)}
+        \State $crop \gets \text{perspective\_warp}(image, box, angle)$
+        \State $text \gets recognizer.\text{predict}(crop)$
+        \State $line\_texts.\text{append}(text)$
+    \EndFor
+    \State $results.\text{append}(\text{"\textbackslash t".join}(line\_texts))$
+\EndFor
+\State $\text{write\_markdown}(results, out\_dir)$
+\State $\text{write\_visualization}(image, boxes, angles, results, out\_dir)$
+\end{algorithmic}
+\end{algorithm}

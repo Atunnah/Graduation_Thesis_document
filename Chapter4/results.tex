@@ -1,1 +1,67 @@
 \section{Results}
+\subsection{Detection Results}
+
+Table \ref{tab:detection_results} presents the detection performance of RT-DETR and EAST on the Vietnamese document test set.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccccccc}
+\hline
+\textbf{Model} & \textbf{P@.50} & \textbf{R@.50} & \textbf{F1@.50} & \textbf{P@.75} & \textbf{R@.75} & \textbf{F1@.75} & \textbf{AP@.50} & \textbf{mAP.5:.95} \\
+\hline
+RT-DETR (ours) & 0.5175 & 0.4862 & 0.5014 & 0.1936 & 0.1819 & 0.1876 & 0.3846 & 0.1467 \\
+EAST & 0.2608 & 0.0902 & 0.1340 & 0.0407 & 0.0141 & 0.0209 & 0.0329 & 0.0080 \\
+\hline
+\end{tabular}
+\caption{Text line detection results on the Vietnamese document test set}
+\label{tab:detection_results}
+\end{table}
+
+The fine-tuned RT-DETR model substantially outperforms EAST across all reported metrics. At IoU threshold 0.5, RT-DETR achieves an F1-score of 0.501 compared to 0.134 for EAST, representing a relative improvement of 274\%. The AP@0.5 of 0.385 versus 0.033 for EAST further confirms that this advantage is consistent across confidence threshold operating points and not attributable to a favorable threshold selection. The performance gap is even more pronounced at the stricter IoU threshold of 0.75, where RT-DETR achieves F1 of 0.188 against EAST's 0.021, a relative improvement of approximately 795\%. This disproportionate improvement at higher IoU thresholds reflects the tighter bounding box localization enabled by the transformer-based architecture and the GWD loss, which jointly supervise all box parameters including the orientation angle.
+
+The mAP@0.5:0.95 of 0.147 for RT-DETR compared to 0.008 for EAST quantifies the overall localization quality advantage. The substantial gap at strict IoU thresholds also reflects a key limitation of the EAST baseline on this test set: EAST was not trained on Vietnamese document layouts and produces axis-aligned detections that systematically under-fit rotated text regions, resulting in low IoU even for correctly localized text lines.
+
+A qualitative illustration of this performance difference is provided in Figure \ref{fig:qualitative_comparison}, which compares the detection outputs of both models on a representative sample Vietnamese receipt. As seen in the figure, RT-DETR provides much tighter bounding boxes that accurately adapt to the orientation of the text lines, whereas EAST produces loose, axis-aligned boxes that often fail to encompass the full extent of rotated text.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\linewidth]{images/detect_comparison.jpg}
+    \caption[Qualitative comparison of text line detection between RT-DETR and EAST]{\textit{Qualitative comparison of text line detection on a Vietnamese receipt. (Left) Detections from the proposed fine-tuned RT-DETR model, shown as red oriented bounding boxes, demonstrating high localization tightness. (Right) Detections from the EAST baseline, shown as green axis-aligned bounding boxes, highlighting significant under-fitting and misalignment on oriented text regions.}}
+    \label{fig:qualitative_comparison}
+\end{figure}
+
+\subsection{Recognition Results}
+
+Table \ref{tab:recognition_results} presents the recognition performance of fine-tuned PARSeq and the four baseline systems on the Vietnamese text line test set.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Model} & \textbf{CER (\%)} $\downarrow$ & \textbf{WER (\%)} $\downarrow$ \\
+\hline
+\textbf{PARSeq (ours)} & \textbf{10.18} & \textbf{34.71} \\
+VietOCR & 11.34 & 37.44 \\
+PaddleOCR & 16.79 & 62.40 \\
+Tesseract & 20.61 & 56.68 \\
+EasyOCR & 36.71 & 78.35 \\
+\hline
+\end{tabular}
+\caption{Text line recognition results on the Vietnamese test set. Lower is better ($\downarrow$).}
+\label{tab:recognition_results}
+\end{table}
+
+The fine-tuned PARSeq model achieves the lowest CER of 10.18\% and WER of 34.71\% among all evaluated systems, outperforming the most competitive baseline VietOCR by 1.16 percentage points in CER and 2.73 percentage points in WER. The margin over general-purpose systems is substantially larger: PaddleOCR achieves CER of 16.79\% and WER of 62.40\%, while EasyOCR produces the weakest results with CER of 36.71\% and WER of 78.35\%, reflecting its limited adaptation to the morphological complexity of Vietnamese diacritical text. Tesseract, despite being a mature OCR engine with Vietnamese language support, achieves CER of 20.61\% and WER of 56.68\%, indicating that its classical feature-based pipeline struggles with the full range of Vietnamese composite characters and font diversity present in the test set.
+
+The WER values across all systems are notably higher than CER values, which is expected given the diacritical density of Vietnamese text: a single character error in a diacritically annotated word renders the entire word incorrect under WER. The absolute WER of 34.71\% for PARSeq reflects the difficulty of the Vietnamese recognition task and indicates that there remains substantial room for improvement, particularly on rare tone-diacritic combinations and degraded image conditions.
+
+To provide further insight into these quantitative metrics and the specific challenges of Vietnamese diacritics, Figure \ref{fig:recognition_qualitative} presents a qualitative comparison of the recognition outputs across the evaluated models. As shown, the fine-tuned PARSeq model is highly robust to varying image conditions and complex tone marks, whereas the baseline systems frequently fail to capture the correct diacritics or substitute characters entirely.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{images/recog_comparison.jpg}
+    \caption[Qualitative comparison of text recognition results across different models]{\textit{Qualitative comparison of text recognition results on challenging Vietnamese text crops. The proposed fine-tuned PARSeq model successfully resolves complex diacritics and blurry inputs (correct predictions shown in green). In contrast, baseline models such as VietOCR, EasyOCR, and Tesseract struggle with morphological complexities, frequently producing character substitutions, missing tone marks, or inserting spurious symbols (errors highlighted in red).}}
+    \label{fig:recognition_qualitative}
+\end{figure}

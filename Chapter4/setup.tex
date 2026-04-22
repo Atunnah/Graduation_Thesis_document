@@ -1,5 +1,65 @@
-\section{Setup}
-Data
-Metric: Defines the quantitative metrics used to assess model performance, including Precision, Recall, F1-score for detection, and Character Error Rate (CER), Word Error Rate (WER) for recognition.
-Model
-Baseline
+\section{Experimental Setup}
+\subsection{Data}
+The detection benchmark is conducted on a held-out test set derived from the same synthetic document generation pipeline described in Section \ref{sec:data_preparation_and_preprocessing}, which was not seen during training. The test set comprises annotated images covering the full range of document layout types used during training, including single-column, multi-column, receipt, and rotated-scatter layouts, with ground truth annotations provided as ICDAR-format quadrilateral polygon labels. Polygon ground truth coordinates are converted to axis-aligned bounding boxes for IoU computation during evaluation, as the EAST baseline does not produce oriented box outputs. For the recognition benchmark, the test set consists of cropped text line images with ground truth Unicode transcription strings, sampled from the held-out validation portion of the synthetic recognition corpus.
+
+\subsection{Metrics}
+\subsubsection{Detection Metrics}
+
+Text line detection performance is assessed using the standard object detection evaluation protocol with axis-aligned IoU matching. For each IoU threshold $\tau$, a predicted box is counted as a true positive if its IoU with a ground truth box exceeds $\tau$ and the ground truth box has not already been matched by a higher-confidence prediction. Five metrics are reported:
+
+\textbf{Precision at IoU $\tau$} measures the fraction of predicted boxes that are correctly localized:
+\begin{equation}
+\text{Precision}@\tau = \frac{TP_\tau}{TP_\tau + FP_\tau}
+\end{equation}
+
+\textbf{Recall at IoU $\tau$} measures the fraction of ground truth boxes that are detected:
+\begin{equation}
+\text{Recall}@\tau = \frac{TP_\tau}{TP_\tau + FN_\tau}
+\end{equation}
+
+\textbf{F1-score at IoU $\tau$} is the harmonic mean of precision and recall:
+\begin{equation}
+\text{F1}@\tau = \frac{2 \cdot \text{Precision}@\tau \cdot \text{Recall}@\tau}{\text{Precision}@\tau + \text{Recall}@\tau}
+\end{equation}
+
+\textbf{Average Precision at IoU 0.5 (AP@0.5)} is computed as the area under the precision-recall curve obtained by varying the confidence threshold, evaluated at a fixed IoU threshold of 0.5. This metric captures localization quality across all operating points of the detector.
+
+\textbf{Mean Average Precision (mAP@0.5:0.95)} averages AP over ten IoU thresholds from 0.5 to 0.95 in steps of 0.05, following the standard COCO evaluation protocol \cite{Lin2015}. This stricter metric penalizes detections that overlap sufficiently for coarse matching but fail to tightly localize the text region, and is therefore particularly sensitive to bounding box tightness and angle accuracy.
+
+\subsubsection{Recognition Metrics}
+
+Text recognition performance is assessed using two standard sequence-level metrics computed over the full test set.
+
+\textbf{Character Error Rate (CER)} measures the edit distance between the predicted and ground truth character sequences, normalized by the length of the ground truth:
+\begin{equation}
+\text{CER} = \frac{\sum_i d_{\text{edit}}(\hat{y}_i, y_i)}{\sum_i |y_i|}
+\end{equation}
+where $d_{\text{edit}}$ denotes the Levenshtein edit distance, $\hat{y}_i$ is the predicted string for the $i$-th sample, and $y_i$ is the ground truth string. CER captures fine-grained recognition errors at the character level, making it sensitive to individual diacritical mark substitutions.
+
+\textbf{Word Error Rate (WER)} measures the edit distance at the word level, where each space-delimited token is treated as a single unit:
+\begin{equation}
+\text{WER} = \frac{\sum_i d_{\text{edit}}^{\text{word}}(\hat{y}_i, y_i)}{\sum_i |y_i|_{\text{word}}}
+\end{equation}
+WER is more sensitive than CER to recognition errors that corrupt complete words, as a single character error renders the entire word incorrect. Given the morphological structure of Vietnamese, where a single missing or incorrect diacritical mark changes the lexical identity of the word, WER provides a direct measure of lexical recognition accuracy.
+
+\subsection{Models and Baselines}
+
+\subsubsection{Detection Baselines}
+
+The selection of a detection baseline requires a model that satisfies two simultaneous criteria: the ability to detect text at the line level, and support for oriented bounding box output. These two requirements together substantially narrow the pool of viable comparison systems. PaddleOCR \cite{Li2022PaddleOCR} and CRAFT \cite{Baek2019} both operate at the text line or word level and produce strong detection results on Vietnamese scene text, but their output representations are restricted to axis-aligned or polygon bounding boxes without explicit angle prediction, making them incompatible with the oriented cropping strategy adopted in this work's inter-stage interface. YOLO-based oriented object detectors such as YOLOv8-OBB \cite{Jocher2023} natively support oriented bounding box output and have been shown to achieve competitive detection accuracy, but their detection granularity is designed for arbitrary object categories rather than text lines specifically, and without fine-tuning on line-level Vietnamese text data their out-of-the-box performance on this task is not directly comparable.
+
+EAST \cite{Zhou2017} uniquely satisfies both criteria in its default configuration. It operates at the text line level and produces rotated rectangle predictions parameterized by a rotation angle, making it directly compatible with the oriented crop strategy used in this work. EAST is therefore selected as the primary detection baseline. It is evaluated using its publicly available frozen OpenCV DNN model, pretrained on a combination of ICDAR and natural scene text datasets, without any fine-tuning on Vietnamese data, providing a fair comparison of generalization capability against the domain-adapted RT-DETR model developed in this thesis.
+
+\subsubsection{Recognition Baselines}
+
+The fine-tuned Vietnamese PARSeq model is compared against four widely used OCR recognition systems:
+
+\textbf{VietOCR} \cite{QuocBinhNguyen2020} is a Vietnamese-specific sequence recognition model based on a transformer-based architecture fine-tuned on Vietnamese text data, representing the most directly comparable Vietnamese-language baseline.
+
+\textbf{EasyOCR} \cite{JaidedAI2020} is a general-purpose multilingual OCR library based on a CRAFT detector and CRNN-style recognizer, supporting Vietnamese as one of its target languages.
+
+\textbf{PaddleOCR} \cite{Li2022PaddleOCR} is a production-grade OCR toolkit developed by Baidu, which includes a Vietnamese-capable recognition model based on a scene text recognition architecture with attention-based decoding.
+
+\textbf{Tesseract} \cite{Smith2007} is the widely used open-source OCR engine, evaluated with its Vietnamese language data pack, representing the classical OCR baseline.
+
+All baseline models are evaluated in their default inference configurations without any fine-tuning on the test set, ensuring a fair comparison of out-of-the-box performance on Vietnamese text.
