@@ -1,12 +1,29 @@
 \section{Objectives, Outline and Scope}
 
-States the concrete research objectives, defines the scope of the study (printed Vietnamese text), and outlines the structure of the remaining chapters.
+\subsection{Research Objectives}
 
-To systematically address the aforementioned objective, the thesis is delineated into five pivotal chapters:
-\begin{itemize}
-    \item \textbf{Chapter 1: Introduction}. 
-    \item \textbf{Chapter 2: Related Works}. 
-    \item \textbf{Chapter 3: Methodology}. 
-    \item \textbf{Chapter 4: Experiments}. 
-    \item \textbf{Chapter 5: Conclusion}. 
-\end{itemize}
+This thesis pursues three concrete and measurable research objectives, each targeting a distinct bottleneck in the Vietnamese document OCR pipeline.
+
+The first objective is to develop an oriented text line detector capable of accurately localizing Vietnamese text lines across a wide range of document layouts and text orientations, with tight bounding box fitting sufficient to minimize background noise and character truncation in the crops delivered to the recognition stage. This objective is operationalized through the extension of RT-DETR V2 with a sine-cosine angle regression head and GWD loss, and through the development of a synthetic detection training corpus with uniform angular coverage.
+
+The second objective is to develop a Vietnamese text recognition model that achieves competitive character and word accuracy across the full inventory of Vietnamese composite characters, including rare tone-diacritic combinations that are systematically underrepresented in general-purpose scene text recognition training data. This objective is operationalized through vocabulary extension, class-weighted training, phonological validity constraints, and fine-tuning on a large-scale Vietnamese-specific synthetic recognition corpus.
+
+The third objective is to integrate the detection and recognition components into a unified, modular end-to-end pipeline with a perspective-corrected inter-stage interface, and to evaluate the integrated system against established detection and recognition baselines on held-out Vietnamese document test sets. This objective provides the empirical validation that grounds the architectural and methodological claims of the thesis.
+
+\subsection{Scope}
+
+The scope of this work is delimited along three dimensions. With respect to text modality, the system is designed and evaluated exclusively for printed Vietnamese text in formal and semi-formal document contexts, including administrative correspondence, financial records, receipts, and identity documents. Handwritten Vietnamese text falls outside the scope of the current system, as it presents additional challenges from variable stroke widths and unconstrained character forms that are not addressed by the training data or model architectures adopted here. With respect to language, the system is optimized specifically for Vietnamese and is evaluated only on Vietnamese text, though the cascaded architecture is language-agnostic and could in principle be extended to other languages with complex diacritical systems through corpus and vocabulary substitution. With respect to evaluation data, the detection and recognition components are each evaluated on held-out synthetic test sets derived from the same generation pipelines used for training, and the characterization of any residual domain gap relative to real scanned documents is based on qualitative analysis and is identified as a primary direction for future work.
+
+\subsection{Thesis Outline}
+
+To systematically address the aforementioned objectives, this thesis is organized into five chapters as follows.
+
+\textbf{Chapter 1: Introduction} establishes the motivation for the work, surveys the demand for Vietnamese document digitization, characterizes the technical challenges that distinguish Vietnamese OCR from the general case, and introduces the proposed cascaded approach alongside the research objectives and scope.
+
+\textbf{Chapter 2: Related Works} surveys four areas of prior research that inform the proposed system: traditional OCR methods and their limitations, deep learning approaches to text detection and recognition with particular focus on the RT-DETR and PARSeq architectures, Vietnamese-specific OCR challenges arising from diacritical complexity and data scarcity, and representative real-world OCR application domains that contextualize the practical value of the system.
+
+\textbf{Chapter 3: Methodology and Implementation} presents the complete technical design of the proposed system, covering the cascaded architecture and end-to-end pipeline design, the synthetic data generation pipelines for both detection and recognition stages, the model optimization strategies including the angle head design and GWD loss configuration for RT-DETR and the vocabulary extension and linguistic constraints for PARSeq, and the system integration connecting both components through the perspective-corrected inter-stage interface.
+
+\textbf{Chapter 4: Experiments} reports the experimental evaluation, including the experimental setup, the selected detection and recognition baselines, quantitative results on the Vietnamese document test sets, and a discussion of the results, identified limitations, and concrete directions for future improvement.
+
+\textbf{Chapter 5: Conclusions} summarizes the principal technical contributions of the thesis, reflects on how the proposed system addresses the challenges identified in this introduction, draws conclusions from the experimental findings, and outlines the practical value of the system for Vietnamese document digitization workflows.
