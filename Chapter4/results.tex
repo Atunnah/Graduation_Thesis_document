@@ -5,22 +5,22 @@ Table \ref{tab:detection_results} presents the detection performance of RT-DETR 
 
 \begin{table}[ht]
 \centering
-\small
+\scriptsize
 \begin{tabular}{lcccccccc}
 \hline
 \textbf{Model} & \textbf{P@.50} & \textbf{R@.50} & \textbf{F1@.50} & \textbf{P@.75} & \textbf{R@.75} & \textbf{F1@.75} & \textbf{AP@.50} & \textbf{mAP.5:.95} \\
 \hline
-RT-DETR (ours) & 0.5175 & 0.4862 & 0.5014 & 0.1936 & 0.1819 & 0.1876 & 0.3846 & 0.1467 \\
+\textbf{RT-DETR (ours)} & \textbf{0.5175} & \textbf{0.4862} & \textbf{0.5014} & \textbf{0.1936} & \textbf{0.1819} & \textbf{0.1876} & \textbf{0.3846} & \textbf{0.1467} \\
 EAST & 0.2608 & 0.0902 & 0.1340 & 0.0407 & 0.0141 & 0.0209 & 0.0329 & 0.0080 \\
 \hline
 \end{tabular}
-\caption{Text line detection results on the Vietnamese document test set}
+\caption[Text line detection results on the Vietnamese document test set]{\textit{Text line detection results on the Vietnamese document test set. Precision (P), Recall (R), F1, and Average Precision (AP) are reported at IoU thresholds of 0.50 and 0.75, along with mean AP averaged over thresholds from 0.50 to 0.95.}}
 \label{tab:detection_results}
 \end{table}
 
-The fine-tuned RT-DETR model substantially outperforms EAST across all reported metrics. At IoU threshold 0.5, RT-DETR achieves an F1-score of 0.501 compared to 0.134 for EAST, representing a relative improvement of 274\%. The AP@0.5 of 0.385 versus 0.033 for EAST further confirms that this advantage is consistent across confidence threshold operating points and not attributable to a favorable threshold selection. The performance gap is even more pronounced at the stricter IoU threshold of 0.75, where RT-DETR achieves F1 of 0.188 against EAST's 0.021, a relative improvement of approximately 795\%. This disproportionate improvement at higher IoU thresholds reflects the tighter bounding box localization enabled by the transformer-based architecture and the GWD loss, which jointly supervise all box parameters including the orientation angle.
+The fine-tuned RT-DETR model substantially outperforms EAST across all reported metrics. At IoU threshold 0.5, RT-DETR achieves an F1-score of \textbf{0.501} compared to \textbf{0.134} for EAST, representing a relative improvement of 274\%. The AP@0.5 of 0.385 versus 0.033 for EAST further confirms that this advantage is consistent across confidence threshold operating points and not attributable to a favorable threshold selection. The performance gap is even more pronounced at the stricter IoU threshold of 0.75, where RT-DETR achieves F1 of \textbf{0.188} against EAST's \textbf{0.021}, a relative improvement of approximately 795\%. This disproportionate improvement at higher IoU thresholds reflects the tighter bounding box localization enabled by the transformer-based architecture and the GWD loss, which jointly supervise all box parameters including the orientation angle.
 
-The mAP@0.5:0.95 of 0.147 for RT-DETR compared to 0.008 for EAST quantifies the overall localization quality advantage. The substantial gap at strict IoU thresholds also reflects a key limitation of the EAST baseline on this test set: EAST was not trained on Vietnamese document layouts and produces axis-aligned detections that systematically under-fit rotated text regions, resulting in low IoU even for correctly localized text lines.
+The mAP@0.5:0.95 of \textbf{0.147} for RT-DETR compared to \textbf{0.008} for EAST quantifies the overall localization quality advantage. The substantial gap at strict IoU thresholds also reflects a key limitation of the EAST baseline on this test set: EAST was not trained on Vietnamese document layouts and produces axis-aligned detections that systematically under-fit rotated text regions, resulting in low IoU even for correctly localized text lines.
 
 A qualitative illustration of this performance difference is provided in Figure \ref{fig:qualitative_comparison}, which compares the detection outputs of both models on a representative sample Vietnamese receipt. As seen in the figure, RT-DETR provides much tighter bounding boxes that accurately adapt to the orientation of the text lines, whereas EAST produces loose, axis-aligned boxes that often fail to encompass the full extent of rotated text.
 
@@ -49,13 +49,13 @@ Tesseract & 20.61 & 56.68 \\
 EasyOCR & 36.71 & 78.35 \\
 \hline
 \end{tabular}
-\caption{Text line recognition results on the Vietnamese test set. Lower is better ($\downarrow$).}
+\caption[Text line recognition results on the Vietnamese test set.]{\textit{Text line recognition results on the Vietnamese test set. Character Error Rate (CER) and Word Error Rate (WER) are reported for each model, with lower values indicating better performance. The proposed PARSeq model achieves the lowest error rates across both metrics.}}
 \label{tab:recognition_results}
 \end{table}
 
-The fine-tuned PARSeq model achieves the lowest CER of 10.18\% and WER of 34.71\% among all evaluated systems, outperforming the most competitive baseline VietOCR by 1.16 percentage points in CER and 2.73 percentage points in WER. The margin over general-purpose systems is substantially larger: PaddleOCR achieves CER of 16.79\% and WER of 62.40\%, while EasyOCR produces the weakest results with CER of 36.71\% and WER of 78.35\%, reflecting its limited adaptation to the morphological complexity of Vietnamese diacritical text. Tesseract, despite being a mature OCR engine with Vietnamese language support, achieves CER of 20.61\% and WER of 56.68\%, indicating that its classical feature-based pipeline struggles with the full range of Vietnamese composite characters and font diversity present in the test set.
+The fine-tuned PARSeq model achieves the lowest CER of \textbf{10.18\%} and WER of \textbf{34.71\%} among all evaluated systems, outperforming the most competitive baseline VietOCR by 1.16 percentage points in CER and 2.73 percentage points in WER. The margin over general-purpose systems is substantially larger: PaddleOCR achieves CER of \textbf{16.79\%} and WER of \textbf{62.40\%}, while EasyOCR produces the weakest results with CER of \textbf{36.71\%} and WER of \textbf{78.35\%}, reflecting its limited adaptation to the morphological complexity of Vietnamese diacritical text. Tesseract, despite being a mature OCR engine with Vietnamese language support, achieves CER of \textbf{20.61\%} and WER of \textbf{56.68\%}, indicating that its classical feature-based pipeline struggles with the full range of Vietnamese composite characters and font diversity present in the test set.
 
-The WER values across all systems are notably higher than CER values, which is expected given the diacritical density of Vietnamese text: a single character error in a diacritically annotated word renders the entire word incorrect under WER. The absolute WER of 34.71\% for PARSeq reflects the difficulty of the Vietnamese recognition task and indicates that there remains substantial room for improvement, particularly on rare tone-diacritic combinations and degraded image conditions.
+The WER values across all systems are notably higher than CER values, which is expected given the diacritical density of Vietnamese text: a single character error in a diacritically annotated word renders the entire word incorrect under WER. The absolute WER of \textbf{34.71\%} for PARSeq reflects the difficulty of the Vietnamese recognition task and indicates that there remains substantial room for improvement, particularly on rare tone-diacritic combinations and degraded image conditions.
 
 To provide further insight into these quantitative metrics and the specific challenges of Vietnamese diacritics, Figure \ref{fig:recognition_qualitative} presents a qualitative comparison of the recognition outputs across the evaluated models. As shown, the fine-tuned PARSeq model is highly robust to varying image conditions and complex tone marks, whereas the baseline systems frequently fail to capture the correct diacritics or substitute characters entirely.
 
