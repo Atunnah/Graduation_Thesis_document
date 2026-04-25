@@ -107,12 +107,14 @@ The learning rate schedule is configured as cosine annealing with a linear warmu
 \begin{equation}
 \eta(t) = \frac{\eta}{2} \left(1 + \cos\left(\pi \cdot \frac{t - t_{\text{warmup}}}{T - t_{\text{warmup}}}\right)\right), \quad t \geq t_{\text{warmup}}
 \end{equation}
-where $T$ is the total number of training epochs and $t_{\text{warmup}}$ is the number of warmup epochs. Training progress is monitored via \texttt{train\_loss}, \texttt{val\_loss}, Character Error Rate (\texttt{val\_cer}), and Word Error Rate (\texttt{val\_wer}), logged to TensorBoard and Weights and Biases at each epoch. The best checkpoint is selected by minimum validation loss. The model is trained on the full 2,000,000-image synthetic corpus with a 90/10 train-validation split, and the best checkpoint is selected by minimum validation loss. Training is conducted using PyTorch Lightning \cite{Falcon2019}.
+where $T$ is the total number of training epochs and $t_{\text{warmup}}$ is the number of warmup epochs. Training progress is monitored via \texttt{train\_loss}, \texttt{val\_loss}, Character Error Rate (\texttt{val\_cer}), and Word Error Rate (\texttt{val\_wer}), logged to TensorBoard and Weights and Biases at each epoch. As illustrated in Figure \ref{fig:parseq_curves}, the convergence behavior of these metrics demonstrates the model's steady learning progression and the continuous improvement in recognition accuracy throughout the training steps. The model is trained on the full 2,000,000-image synthetic corpus with a 90/10 train-validation split, and the best checkpoint is selected by minimum validation loss. Training is conducted using PyTorch Lightning \cite{Falcon2019}.
 
-\bigskip
-\textbf{Image suggestion 1:} Training and validation loss curves over epochs for PARSeq, showing convergence behavior and the gap between \texttt{train\_loss} and \texttt{val\_loss}. Export from W\&B or TensorBoard logs.
-\textbf{Image suggestion 2:} CER and WER curves over epochs on the validation set, illustrating the improvement in recognition accuracy across training. Export from W\&B or TensorBoard logs.
-\bigskip
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/parseq_curves.png}
+    \caption[Training and validation curves for the PARSeq model]{\textit{Training and validation metrics illustrating the learning behavior of the PARSeq model over training steps. The plots display the training loss and validation loss (top row, left to right), along with the Character Error Rate (CER, blue line) and Word Error Rate (WER, orange line) evaluated on the validation set (bottom row).}}
+    \label{fig:parseq_curves}
+\end{figure}
 
 \subsubsection{Linguistic Constraints via Vocabulary Filtering}
 A key optimization for Vietnamese recognition is the application of linguistic constraints that restrict the decoder's output to phonologically valid Vietnamese character sequences. Not all combinations of base character and diacritical marks are valid in Vietnamese phonology: for example, the character \textit{q} cannot appear with tonal marks because it only occurs in the consonant cluster \textit{qu}, and certain vowel-tone combinations are phonologically impossible in any Vietnamese syllable. These constraints are encoded as a validity mask over the output vocabulary, applied as a log-probability bias at decoding time to suppress the generation of invalid composite characters.

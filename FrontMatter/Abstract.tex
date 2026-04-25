@@ -1,2 +1,16 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
+
+The digitization of Vietnamese documents has become an urgent priority for administrative agencies and enterprises. Optical character recognition (OCR) serves as the key enabling technology, yet the orthographic complexity of Vietnamese, which superimposes multiple layers of vowel modifications and tonal diacritics onto a Latin-derived base script, poses substantial challenges. General-purpose OCR systems struggle because Vietnamese requires a vast character inventory, visual distinctions between diacritically similar characters are often minimal under realistic conditions, and existing systems fail to handle diverse layouts and arbitrary text orientations caused by page skew or document curvature.
+
+This thesis proposes a cascaded deep learning architecture that addresses these challenges through two independently optimized stages. The first stage employs a fine-tuned RT-DETR V2 detector extended with an auxiliary angle regression head, which predicts text line orientations using sine-cosine parameterization and is trained with Gaussian Wasserstein Distance loss to provide geometrically unified supervision over oriented bounding boxes. The second stage uses a fine-tuned PARSeq Vision Transformer recognizer adapted to Vietnamese via vocabulary extension to approximately 310 composite tokens, class-weighted cross-entropy loss to counteract severe character frequency imbalance, and a phonological validity mask applied at decoding time. A perspective-corrected inter-stage interface converts arbitrarily oriented text regions into upright rectangular crops, ensuring that angular localization quality directly benefits diacritical recognition accuracy.
+
+To address data scarcity, two large-scale synthetic generation pipelines are developed. The detection pipeline produces approximately 130,000 annotated document images spanning seven layout archetypes with uniform angular coverage across the full $[0^\circ, 360^\circ)$ rotation range. The recognition pipeline produces approximately 2,000,000 labeled text line crops via a three-branch parallel strategy covering clean printed, augmented scene text, and mixed-background conditions.
+
+Experimental evaluation demonstrates that the proposed system substantially outperforms established baselines. On detection, the fine-tuned RT-DETR model achieves F1@0.50 of 0.501 and mAP@0.5:0.95 of 0.147, compared to 0.134 and 0.008 for EAST. On recognition, PARSeq achieves a Character Error Rate of 10.18\% and Word Error Rate of 34.71\%, outperforming VietOCR, PaddleOCR, Tesseract, and EasyOCR. The complete system is deployed as a modular pipeline producing structured transcripts, with component encapsulation facilitating future upgrades without full retraining.
+
+\vspace{-0.5cm}
+\begin{flushleft}
+    \textit{\textbf{Keywords:} Vietnamese OCR, Text Detection, Text Recognition, Oriented Bounding Box, RT-DETR, PARSeq, Gaussian Wasserstein Distance, Synthetic Data Generation, Deep Learning.}
+\end{flushleft}
+\changefontsizes[16pt]{13pt}
