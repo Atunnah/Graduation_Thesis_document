@@ -2,7 +2,7 @@
 \label{sec:optimization}
 The two-stage cascaded architecture requires independent optimization of the RT-DETR detection model and the PARSeq recognition model, each of which presents distinct training challenges arising from their architectural differences and the domain-specific requirements of Vietnamese text. This section details the fine-tuning strategies, hyperparameter configurations, and architectural modifications applied to each component, explaining the rationale for each design decision in relation to the Vietnamese document detection and recognition objectives.
 
-\subsection{Optimizing RT-DETR: Fine-tuning, Angle Head Design and Training Strategy}
+\subsection{Optimizing RT-DETR}
 The RT-DETR detection model is initialized from \texttt{PekingU/rtdetr\_v2\_r50vd} checkpoint \cite{Zhao2024}, which provides a ResNet-50 backbone pretrained on ImageNet \cite{He2015} and a transformer encoder-decoder pretrained on the COCO object detection benchmark \cite{Lin2015}. Fine-tuning from this checkpoint rather than training from scratch substantially reduces the data and compute requirements, as the backbone has already learned rich multi-scale visual representations transferable to text region localization. The primary adaptations required for Vietnamese text detection are the extension of the output head to support oriented bounding box prediction, the introduction of GWD loss alongside the standard detection losses, and a carefully staged learning rate schedule that avoids catastrophic forgetting of the pretrained backbone weights.
 
 \subsubsection{Angle Prediction Head Architecture}
