@@ -1,4 +1,5 @@
-\section{Proposed Cascaded Deep Learning Architecture Overview}
+\section{Proposed Cascaded Deep Learning Architecture \\ Overview}
+\label{sec:proposed_cascaded_deep_learning_architecture_overview_3_1}
 The Vietnamese OCR system developed in this thesis adopts a cascaded two-stage architecture in which text detection and text recognition are performed by two independent, specialized deep learning models connected through a structured inter-stage interface. Rather than pursuing an end-to-end jointly trained architecture that simultaneously optimizes detection and recognition within a single model, this work deliberately separates the two stages to exploit the complementary strengths of RT-DETR and PARSeq, each of which has been specifically optimized for its respective subtask. This architectural choice reflects both practical and principled considerations that are elaborated throughout this section.
 
 End-to-end OCR architectures, which directly map input document images to output character sequences without explicit intermediate detection, have been explored in works such as CRNN \cite{Shi2015} and more recently in attention-based architectures that process entire document images. While these approaches offer the theoretical advantage of joint optimization, they impose strong assumptions about document layout and text line arrangement that limit their applicability to the diverse Vietnamese document types targeted in this thesis. Furthermore, end-to-end models trained on fixed input resolutions struggle to generalize across documents with varying text densities, font sizes, and orientations, all of which are characteristic of real-world Vietnamese administrative and scene text documents. In contrast, a cascaded design decouples the spatial localization problem from the sequence transcription problem, allowing each component to be independently optimized, fine-tuned, and evaluated. This modularity also facilitates targeted improvement of individual stages without requiring full system retraining, which is particularly valuable given the limited availability of annotated Vietnamese OCR data discussed in Chapter \ref{chapter:related_works}.
@@ -13,12 +14,13 @@ As illustrated in Figure \ref{fig:proposed_cascaded}, the overall cascaded archi
 \end{figure}
 
 \subsection{End-to-End Pipeline Design}
+\label{sec:end_to_end_pipeline_design}
 The full processing pipeline from raw input image to final recognized text comprises five sequential stages: image ingestion and preprocessing, oriented text line detection, bounding box post-processing and NMS, perspective-corrected cropping, and character sequence recognition. Each stage is implemented as an independent module with well-defined input and output interfaces, enabling the system to be executed as a unified inference pipeline through a single command-line entry point. As detailed in Figure \ref{fig:proposed_pipeline}, this pipeline systematically transforms intermediate data structures and shapes at each interface, the mechanics of which are elaborated in the following stages.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.3\linewidth]{images/ocr_pipeline.png}
-    \caption[Detailed flowchart of the end-to-end OCR pipeline, illustrating the five sequential processing stages and intermediate data shapes at each interface]{\textit{Detailed flowchart of the end-to-end OCR pipeline, illustrating the five sequential processing stages and intermediate data shapes at each interface}}
+    \caption[Detailed flowchart of the end-to-end OCR pipeline, illustrating the five sequential processing stages and intermediate data shapes at each interface]{\textit{The pipeline processes a $1080 \times 1920 \times 3$ input image through five sequential stages: (1) image ingestion and normalization to $800 \times 800 \times 3$, (2) RT-DETR text detection producing $10 \times 5$ oriented bounding box predictions, (3) post-processing and NMS to suppress duplicates, (4) perspective rectification yielding $10 \times 48 \times 1024 \times 3$ text line crops, and (5) PARSeq recognition converting each crop to a Unicode string.}}
     \label{fig:proposed_pipeline}
 \end{figure}
 
@@ -34,6 +36,7 @@ In the fourth stage, each detected text line region is cropped from the original
 In the fifth and final stage, each rectified text line image is preprocessed by the PARSeq image transform pipeline, which resizes it to the model's expected input dimensions of 48 $\times$ 1024 pixels while preserving aspect ratio through symmetric padding, normalizes pixel values using ImageNet statistics, and converts the result to a floating-point tensor. The preprocessed tensor is forwarded through the fine-tuned PARSeq model in autoregressive decoding mode, producing a predicted character sequence that is decoded from token indices to Unicode strings using the Vietnamese-extended tokenizer. The recognized strings from all text line regions are concatenated in reading order and written to the output file alongside a visualization image showing the detected oriented bounding boxes and recognized text overlaid on the original document.
 
 \subsection{Inter-stage Data Flow and Cropping Strategy}
+\label{sec:inter_stage_data_flow_and_cropping_strategy_3_1_2}
 
 The interface between the detection and recognition stages is the most critical design point in the cascaded architecture, as errors introduced at this boundary propagate irreversibly into the recognition output. The inter-stage data flow must correctly transform the geometric detection outputs of RT-DETR into image crops that satisfy the input assumptions of PARSeq, while minimizing the introduction of background noise, character truncation, and geometric distortion.
 
@@ -48,6 +51,7 @@ These four corner points serve as the source quadrilateral for a perspective tra
 The cropped text line image is then resized to the PARSeq input dimensions of $48 \times 1024$ pixels using an aspect-ratio-preserving resize followed by symmetric zero-padding on the shorter dimension. This padding strategy ensures that characters are not stretched or compressed horizontally, which would distort the visual appearance of Vietnamese diacritical marks and reduce recognition accuracy. The padded image is normalized using mean and standard deviation values of $(0.485, 0.456, 0.406)$ and $(0.229, 0.224, 0.225)$ respectively, matching the ImageNet pretraining statistics of the ViT backbone used by PARSeq.
 
 \subsection{Error Propagation Analysis across Stages}
+\label{sec:error_propagation_analysis_across_stages}
 
 A fundamental limitation of cascaded architectures relative to jointly trained end-to-end systems is that errors generated in the first stage cannot be corrected by the second stage, as the recognizer operates solely on the cropped image produced by the detector without access to the original detection confidence or bounding box uncertainty. Understanding the failure modes introduced at each stage and their downstream consequences is therefore essential for diagnosing system-level recognition errors and motivating the optimization strategies described in Section \ref{sec:optimization}.
 

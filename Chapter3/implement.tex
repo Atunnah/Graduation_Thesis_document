@@ -4,7 +4,7 @@ The Vietnamese OCR system is implemented entirely in Python 3.10 and relies on a
 
 \begin{table}[ht]
 \centering
-\footnotesize
+\scriptsize
 \begin{tabular}{lll}
 \hline
 \textbf{Library} & \textbf{Role} & \textbf{Used In} \\
@@ -23,7 +23,7 @@ Weights and Biases & Experiment tracking and logging & Both stages \\
 PyYAML & Configuration file parsing & Both stages \\
 \hline
 \end{tabular}
-\caption{Principal software frameworks and libraries used in the Vietnamese OCR system}
+\caption[Principal software frameworks and libraries used in the Vietnamese OCR system]{\textit{Libraries are categorized by their primary role; entries marked ``Both stages'' contribute to the detection pipeline, recognition pipeline, or the shared inference interface. All packages are open-source and available via PyPI.}}
 \label{tab:frameworks}
 \end{table}
 
@@ -31,21 +31,20 @@ The detection model is loaded and served through the Hugging Face Transformers l
 
 The recognition model is built on the original PARSeq implementation from the \texttt{strhub} library \cite{Bautista2022}, which provides the ViT encoder, the permutation-based autoregressive decoder, and the tokenizer. Training is orchestrated through PyTorch Lightning \cite{Falcon2019}, which handles distributed training, automatic mixed precision, gradient clipping, and callback management. Experiment metrics including training loss, validation loss, Character Error Rate, and Word Error Rate are logged to Weights and Biases at each epoch.
 
-The geometric operations required for oriented bounding box processing, including perspective crop computation and rotated NMS, rely on the standard OpenCV functions \texttt{getPerspectiveTransform} and \texttt{warpPerspective} alongside \texttt{torchvision.ops.box\_iou\_rotated}. Both modules are executed on a single NVIDIA GPU, with CUDA device selection managed by explicitly configuring the \texttt{CUDA\_VISIBLE\_DEVICES} environment variable set prior to framework initialization to avoid device conflicts between the two model components.
+The geometric operations required for oriented bounding box processing, including perspective crop computation and rotated NMS, rely on the standard OpenCV functions \texttt{getPerspectiveTransform} and \texttt{warpPerspective} alongside the TorchVision function \texttt{torchvision.ops.box\_iou\_rotated}. Both modules are executed on a single NVIDIA GPU, with CUDA device selection managed by explicitly configuring the \texttt{CUDA\_VISIBLE\_DEVICES} environment variable set prior to framework initialization to avoid device conflicts between the two model components.
 
 \subsection{Model Integration and Component Connection}
-The two model components, the RT-DETR detector and the PARSeq recognizer, are implemented as independent, self-contained Python classes with well-defined interfaces, allowing them to be loaded, tested, and upgraded independently before being connected into the unified inference pipeline. This modular design directly reflects the cascaded architecture described in Section 3.1 and is a deliberate engineering choice that facilitates component-level debugging and future replacement of either stage.
+The two model components, the RT-DETR detector and the PARSeq recognizer, are implemented as independent, self-contained Python classes with well-defined interfaces, allowing them to be loaded, tested, and upgraded independently before being connected into the unified inference pipeline. This modular design directly reflects the cascaded architecture described in Section \ref{sec:proposed_cascaded_deep_learning_architecture_overview_3_1} and is a deliberate engineering choice that facilitates component-level debugging and future replacement of either stage.
 
-The detector is encapsulated in the \texttt{LineDetector} class, which wraps the extended \texttt{\_RTDetrV2LineDetector} model. At instantiation time, \texttt{LineDetector} loads the fine-tuned model weights from a checkpoint directory, reconstructs the angle head from the saved state dictionary, and initializes the Hugging Face image processor. The class exposes a single public method \texttt{predict(image, conf\_threshold, iou\_threshold)}, which accepts a PIL \texttt{Image} object and returns a dictionary containing four fields: \texttt{boxes\_xyxy} (a tensor of axis-aligned bounding box coordinates in pixel space), \texttt{scores} (detection confidence scores), \texttt{angles} (predicted orientation angles in degrees derived from the sine-cosine head outputs via \texttt{atan2}), and \texttt{orig\_size} (the original image dimensions). This output contract defines the inter-stage interface that the pipeline layer consumes.
+The detector is encapsulated in the \texttt{LineDetector} class, which wraps the extended \texttt{\_RTDetrV2LineDetector} model. At instantiation time, \texttt{LineDetector} loads the fine-tuned model weights from a checkpoint directory, reconstructs the angle head from the saved state dictionary, and initializes the Hugging Face image processor. The class exposes a single public method \texttt{predict(image, conf\_threshold, iou\_threshold)}, which accepts a PIL \texttt{Image} object and returns a dictionary containing four fields: \texttt{boxes\_xyxy} (a tensor of axis-aligned bounding box coordinates in pixel space), \texttt{scores} (detection confidence scores), \texttt{angles} (predicted orientation angles in degrees via \texttt{atan2}), and \texttt{orig\_size} (the original image dimensions). This output contract defines the inter-stage interface that the pipeline layer consumes.
 
 The recognizer is encapsulated in the \texttt{TextRecognizer} class, which loads the fine-tuned PARSeq checkpoint, reconstructs the extended Vietnamese tokenizer from the character set specified in the inference configuration file, and composes the preprocessing transform pipeline. The class exposes a single public method \texttt{predict(image)}, which accepts a PIL \texttt{Image} object containing a single rectified text line crop and returns the decoded Unicode string. Internally, the method applies the \texttt{ResizeKeepRatioPad} transform to resize the input to $48 \times 1024$ pixels with aspect-ratio-preserving padding, normalizes pixel values using ImageNet statistics, and forwards the tensor through the PARSeq model in autoregressive decoding mode. The tokenizer's \texttt{decode} method strips the begin-of-sequence, end-of-sequence, and padding tokens from the output logit sequence before returning the final string.
 
-The connection between detector and recognizer is implemented in \texttt{pipeline.py}, which instantiates both classes and coordinates the inter-stage data flow. As illustrated in Figure \ref{fig:proposed_cascaded}, the pipeline receives the detector's bounding box output and for each detected region computes the four corners of the oriented rectangle, applies \texttt{cv2.getPerspectiveTransform} to produce an upright crop, and passes the crop directly to the recognizer's \texttt{predict} method. The interface between the two components is thus a sequence of PIL \texttt{Image} objects, one per detected text line, with no shared state or memory between the two model instances.
+The connection between the detector and the recognizer is implemented in the inference coordination script \texttt{pipeline.py}, which instantiates both classes and coordinates the inter-stage data flow. As illustrated in Figure \ref{fig:proposed_cascaded}, the pipeline receives the detector's bounding box output and for each detected region computes the four corners of the oriented rectangle, applies the OpenCV perspective transform function \texttt{cv2.getPerspectiveTransform} to produce an upright crop, and passes the crop directly to the recognizer's \texttt{predict} method. The interface between the two components is thus a sequence of PIL \texttt{Image} objects, one per detected text line, with no shared state or memory between the two model instances.
 
 \subsection{Running the System End-to-End}
 The complete OCR pipeline is executed through a single command-line entry point implemented in \texttt{pipeline.py}, which accepts configuration arguments specifying the input image path, the detection engine, model checkpoint paths, and the output directory. The detection stage utilizes the custom RT-DETR oriented detector trained in this work, while the recognition stage employs the fine-tuned Vietnamese PARSeq model. 
 
-A representative command-line invocation of the pipeline is as follows:
 \begin{verbatim}
 python pipeline.py \
     --image_path  path/to/input.png \
@@ -56,9 +55,7 @@ python pipeline.py \
     --output_dir  ./pipeline_output
 \end{verbatim}
 
-Upon execution, the pipeline performs the following sequence of operations. Both model components are loaded and moved to the available CUDA device. The input image is opened and converted to RGB format. The detector's \texttt{predict} method is called with a default confidence threshold of 0.5 and an IoU threshold of 0.5 for NMS. The surviving detections are sorted by vertical position and grouped into logical text lines using the 40\% vertical overlap criterion described in Section \ref{sec:end_to_end_pipeline_design}. For each detection within each group, sorted left to right, the perspective crop is computed and passed to the recognizer. The recognized strings from all detections within a logical line are joined with tab separators to preserve column structure in tabular documents.
-
-Two output files are written to the specified output directory. The first is a Markdown file containing the full OCR transcript, with one logical text line per output line and tab-separated fields for multi-column regions. The second is a visualization image showing the original document with detected oriented bounding boxes drawn in red and recognized text strings overlaid in blue above each detection, providing a visual quality check of both detection and recognition results.
+Both models are loaded onto the available CUDA device. The detector is called with confidence threshold 0.5 and IoU threshold 0.5. Surviving detections are sorted vertically and grouped into logical text lines using the 40\% overlap criterion from Section \ref{sec:end_to_end_pipeline_design}; within each group, crops are processed left to right and joined with tab separators. Two output files are produced: a Markdown transcript and a visualization image with bounding boxes in red and recognized text in blue. The full procedure is formalized in Algorithm \ref{alg:pipeline_execution}.
 
 \begin{algorithm}[ht]
 \caption{End-to-End OCR Pipeline Execution}
