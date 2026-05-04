@@ -75,6 +75,8 @@ Image size & $800 \times 800$ \\
 \label{tab:rtdetr_config}
 \end{table}
 
+The complete source code for the RT-DETR detection training pipeline, including the angle prediction head implementation, loss configuration, and progressive unfreezing logic, is publicly available \href{https://github.com/Atunnah/Graduation_Thesis/tree/main/detect}{\underline{here}}.
+
 \subsection{Optimizing PARSeq}
 The PARSeq recognition model is initialized from a checkpoint pretrained on standard Latin scene text benchmarks and then fine-tuned on the Vietnamese synthetic recognition corpus described in Section \ref{sec:data_preparation_and_preprocessing}. The primary challenges in this fine-tuning process are the expansion of the output vocabulary to cover the full Vietnamese composite character set, the adaptation of the patch embedding to the non-standard input resolution required for wide text line images, and the application of Vietnamese-specific linguistic constraints during decoding.
 
@@ -124,3 +126,5 @@ where $T$ is the total number of training epochs and $t_{\text{warmup}}$ is the 
 A key optimization for Vietnamese recognition is the application of linguistic constraints that restrict the decoder's output to phonologically valid Vietnamese character sequences. Not all combinations of base character and diacritical marks are valid in Vietnamese phonology: for example, the character \textit{q} cannot appear with tonal marks because it only occurs in the consonant cluster \textit{qu}, and certain vowel-tone combinations are phonologically impossible in any Vietnamese syllable. These constraints are encoded as a validity mask over the output vocabulary, applied as a log-probability bias at decoding time to suppress the generation of invalid composite characters.
 
 The validity mask is constructed by enumerating all composite characters present in a large Vietnamese lexicon, marking each token in the extended vocabulary as valid or invalid based on its presence in the lexical inventory. At inference time, the log-probabilities of invalid tokens are set to a large negative value before the softmax operation, effectively zeroing their probability mass without modifying the model's learned distributions. This post-hoc constraint application, similar in spirit to the dictionary-guided decoding of VinText \cite{Nguyen2021}, reduces the frequency of phonologically impossible outputs, particularly in degraded image conditions where the visual evidence is ambiguous between diacritically similar characters such as \textit{ọ} and \textit{ở}.
+
+The complete source code for the PARSeq recognition training pipeline, including vocabulary expansion, permutation-based training, and linguistic constraint decoding, is publicly available \href{https://github.com/Atunnah/Graduation_Thesis/tree/main/recog}{\underline{here}}.

@@ -55,6 +55,8 @@ python pipeline.py \
     --output_dir  ./pipeline_output
 \end{verbatim}
 
+\vspace{2cm}
+
 Both models are loaded onto the available CUDA device. The detector is called with confidence threshold 0.5 and IoU threshold 0.5. Surviving detections are sorted vertically and grouped into logical text lines using the 40\% overlap criterion from Section \ref{sec:end_to_end_pipeline_design}; within each group, crops are processed left to right and joined with tab separators. Two output files are produced: a Markdown transcript and a visualization image with bounding boxes in red and recognized text in blue. The full procedure is formalized in Algorithm \ref{alg:pipeline_execution}.
 
 \begin{algorithm}[ht]
