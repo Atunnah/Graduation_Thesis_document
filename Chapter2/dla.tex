@@ -87,6 +87,8 @@ As shown in Figure \ref{fig:parseq_architecture}, the architectural foundation o
     \label{fig:parseq_architecture}
 \end{figure}
 
+\vspace{3cm}
+
 The central innovation of PARSeq lies in its permutation-based training strategy, inspired by the XLNet language model \cite{Yang2020}. Rather than training the decoder to predict characters exclusively in a fixed left-to-right order, PARSeq samples multiple permutations of the output character sequence during training and optimizes the model to correctly predict each character given all other characters that precede it in the sampled permutation order. This approach trains a single shared decoder to internalize all possible factorizations of the joint sequence probability, implicitly learning a bidirectional language model without requiring a separately pretrained component. As illustrated in Figure \ref{fig:parseq_permutation}, at inference time this confers the ability to iteratively refine predictions: an initial left-to-right decoding pass produces a candidate sequence, which is then used as context for a subsequent refinement pass that can correct individual characters using both preceding and following character context. This refinement mechanism allows PARSeq to resolve visually ambiguous characters that unidirectional decoders would misclassify, particularly in languages with dense diacritical marks such as Vietnamese.
 
 \begin{figure}[ht]
@@ -133,9 +135,9 @@ The final GWD loss is defined as:
 \end{equation}
 where $\tau$ is a scaling hyperparameter. This formulation yields a loss value in $[0, 1]$ that is differentiable with respect to all box parameters including the rotation angle, provides meaningful gradient signal even for non-overlapping boxes, and degrades gracefully under near-degenerate box configurations where IoU-based losses become numerically unstable \cite{Yang2022}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\linewidth]{images/gwd_gaussian_mapping.png}
+    \includegraphics[width=0.6\linewidth]{images/gwd_gaussian_mapping.png}
     \caption[OBB to Gaussian distribution mapping]{\textit{Illustration of the 
     equivalence between an oriented bounding box $B(x, y, w, h, \theta)$ and 
     its corresponding 2D Gaussian distribution $N(m, \Sigma)$ \cite{Yang2022}}}

@@ -1,4 +1,4 @@
-\section{Proposed Cascaded Deep Learning Architecture \\ Overview}
+\section{Cascaded Detection-Recognition Architecture}
 \label{sec:proposed_cascaded_deep_learning_architecture_overview_3_1}
 The Vietnamese OCR system developed in this thesis adopts a cascaded two-stage architecture in which text detection and text recognition are performed by two independent, specialized deep learning models connected through a structured inter-stage interface. Rather than pursuing an end-to-end jointly trained architecture that simultaneously optimizes detection and recognition within a single model, this work deliberately separates the two stages to exploit the complementary strengths of RT-DETR and PARSeq, each of which has been specifically optimized for its respective subtask. This architectural choice reflects both practical and principled considerations that are elaborated throughout this section.
 
@@ -8,14 +8,14 @@ As illustrated in Figure \ref{fig:proposed_cascaded}, the overall cascaded archi
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\linewidth]{images/ocr_architecture.png}
+    \includegraphics[width=1\linewidth]{images/ocr_architecture_v2.png}
     \caption[High-level block diagram of the proposed cascaded two-stage Vietnamese OCR system]{\textit{High-level block diagram of the proposed cascaded two-stage Vietnamese OCR system}}
     \label{fig:proposed_cascaded}
 \end{figure}
 
 \subsection{End-to-End Pipeline Design}
 \label{sec:end_to_end_pipeline_design}
-The full processing pipeline from raw input image to final recognized text comprises five sequential stages: image ingestion and preprocessing, oriented text line detection, bounding box post-processing and NMS, perspective-corrected cropping, and character sequence recognition. Each stage is implemented as an independent module with well-defined input and output interfaces, enabling the system to be executed as a unified inference pipeline through a single command-line entry point. As detailed in Figure \ref{fig:proposed_pipeline}, this pipeline systematically transforms intermediate data structures and shapes at each interface, the mechanics of which are elaborated in the following stages.
+Whereas Section~\ref{sec:approach_1_2_1} introduced the cascaded architecture at a overview level, this section details the concrete data transformations, tensor shapes, and implementation contracts at each inter-stage interface. The full processing pipeline from raw input image to final recognized text comprises five sequential stages: image ingestion and preprocessing, oriented text line detection, bounding box post-processing and NMS, perspective-corrected cropping, and character sequence recognition. Each stage is implemented as an independent module with well-defined input and output interfaces, enabling the system to be executed as a unified inference pipeline through a single command-line entry point. As detailed in Figure \ref{fig:proposed_pipeline}, this pipeline systematically transforms intermediate data structures and shapes at each interface, the mechanics of which are elaborated in the following stages.
 
 \begin{figure}[ht]
     \centering
@@ -40,7 +40,7 @@ In the fifth and final stage, each rectified text line image is preprocessed by 
 
 The interface between the detection and recognition stages is the most critical design point in the cascaded architecture, as errors introduced at this boundary propagate irreversibly into the recognition output. The inter-stage data flow must correctly transform the geometric detection outputs of RT-DETR into image crops that satisfy the input assumptions of PARSeq, while minimizing the introduction of background noise, character truncation, and geometric distortion.
 
-The detection stage outputs bounding boxes in normalized center-width-height format, which are first converted to pixel-space coordinates by multiplying by the original image dimensions. Given a detected text line with center $(c_x, c_y)$, width $w$, height $h$, and rotation angle $\theta$ encoded as $(\sin\theta, \cos\theta)$, the four corners of the oriented rectangle are computed as:
+The detection stage outputs bounding boxes in normalized center-width-height format, converted to pixel-space coordinates by multiplying by image dimensions. Given a detected text line with center $(c_x, c_y)$, width $w$, height $h$, and rotation angle $\theta$ encoded as $(\sin\theta, \cos\theta)$, the four corners of the oriented rectangle are computed as:
 
 \begin{equation}
 \mathbf{p}_i = \begin{pmatrix} c_x \\ c_y \end{pmatrix} + R(\theta) \begin{pmatrix} \pm w/2 \\ \pm h/2 \end{pmatrix}, \quad R(\theta) = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}
