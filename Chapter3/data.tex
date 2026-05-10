@@ -11,15 +11,15 @@ Text content is sampled from a curated Vietnamese corpus comprising news article
 \subsubsection{Document Layout Types}
 Each synthetic image is assigned one of seven layout archetypes, as shown in Figure \ref{fig:data_illustration}, sampled according to a fixed distribution that reflects the diversity of Vietnamese document formats encountered in practice. Single-column layouts simulate standard administrative correspondence and printed forms. Wide-format layouts simulate landscape-oriented tables and spreadsheet exports. Small-card layouts simulate identity card crops and business card formats. Dense-text layouts simulate newspaper columns and legal document pages. Multi-column layouts, including two-column and three-column variants, simulate academic publications and government gazettes. Receipt layouts simulate retail point-of-sale printouts with characteristic formatting elements including store headers, product line items, subtotal rows, barcodes, and separator lines. Rotated-scatter layouts place text lines at arbitrary orientations across the canvas with no alignment constraints, providing training signal for the detector's angle regression head across the full $[0^\circ, 360^\circ)$ range.
 
-Image canvas dimensions are sampled per layout type from predefined width and height ranges. Background colors are sampled from near-white ranges with randomized RGB values, and text colors are sampled from near-black ranges, producing the high-contrast monochrome appearance typical of printed documents while introducing controlled color variation. The seven layout archetypes are sampled according to a fixed probability distribution 
-rather than uniformly, with single-column and dense-text layouts assigned higher sampling weights to reflect their prevalence in real Vietnamese administrative and legal documents. Receipt and rotated-scatter layouts are assigned lower weights, as they represent less common document categories but are nonetheless critical for ensuring coverage of challenging formatting patterns and arbitrary text orientations in the training corpus.
-
-\begin{figure}[ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.6\linewidth]{images/data_illustration.png}
     \caption[Illustration of the synthetic text dataset with diverse layouts and Oriented Bounding Box (OBB) annotations]{\textit{Illustration of the synthetic text dataset with diverse layouts and Oriented Bounding Box (OBB) annotations}}
     \label{fig:data_illustration}
 \end{figure}
+
+Image canvas dimensions are sampled per layout type from predefined width and height ranges. Background colors are sampled from near-white ranges with randomized RGB values, and text colors are sampled from near-black ranges, producing the high-contrast monochrome appearance typical of printed documents while introducing controlled color variation. The six layout archetypes are sampled according to a fixed probability distribution 
+rather than uniformly, with single-column and dense-text layouts assigned higher sampling weights to reflect their prevalence in real Vietnamese administrative and legal documents. Receipt and rotated-scatter layouts are assigned lower weights, as they represent less common document categories but are nonetheless critical for ensuring coverage of challenging formatting patterns and arbitrary text orientations in the training corpus.
 
 \subsubsection{Angle Distribution and the Scatter Patch}
 An initial analysis of the base generator revealed that the use of \texttt{cv2.minAreaRect} to fit bounding boxes around rendered text caused the reported angles to collapse toward a small set of values near $0^\circ$, $90^\circ$, and $270^\circ$, regardless of the true rendering angle. This occurred because \texttt{minAreaRect} fits the minimum-area enclosing rectangle and always reports angles in $[-90^\circ, 0^\circ]$, introducing systematic quantization that would bias the angle regression head toward a degenerate distribution.
@@ -41,7 +41,7 @@ After text rendering and annotation, each synthetic image undergoes a stochastic
 The generation procedure for a single detection image is summarized in Algorithm~\ref{alg:detection_data_generation}. At each iteration, a layout archetype is selected by sampling a uniform random variable against the fixed probability thresholds, and the corresponding renderer produces the image together with its raw OBB annotations. The augmentation pipeline then operates on the rendered image and bounding boxes jointly, ensuring that all geometric transforms, namely canvas rotation and perspective warp, propagate analytically to the OBB parameters rather than re-fitting boxes from scratch. The final image is saved as JPEG and each bounding box is written to the label file in YOLO OBB format with coordinates normalized by the image dimensions. The complete detection dataset is publicly available \href{https://drive.google.com/drive/folders/1Q453JEqpMgMKteGG4cbb6Nl09tVWzLd3?usp=sharing}{\underline{here}}.
 
 \begin{algorithm}[H]
-\footnotesize
+\scriptsize
 \caption{Data Generation Pipeline for a Single Detection Image}
 \label{alg:detection_data_generation}
 \begin{algorithmic}[1]

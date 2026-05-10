@@ -1,6 +1,6 @@
-\section{Objectives, Outline and Scope}
+% \section{Objectives, Outline and Scope}
 
-\subsection{Research Objectives}
+\section{Research Objectives}
 
 This thesis pursues three concrete and measurable research objectives, each targeting a distinct bottleneck in the Vietnamese document OCR pipeline.
 
@@ -10,20 +10,30 @@ The second objective is to develop a Vietnamese text recognition model that achi
 
 The third objective is to integrate the detection and recognition components into a unified, modular end-to-end pipeline with a perspective-corrected inter-stage interface, and to evaluate the integrated system against established detection and recognition baselines on held-out Vietnamese document test sets. This objective provides the empirical validation that grounds the architectural and methodological claims of the thesis.
 
-\subsection{Scope}
+\section{Scope}
 
 The scope of this work is delimited along three dimensions. With respect to text modality, the system is designed and evaluated exclusively for printed Vietnamese text in formal and semi-formal document contexts, including administrative correspondence, financial records, receipts, and identity documents. Handwritten Vietnamese text falls outside the scope of the current system, as it presents additional challenges from variable stroke widths and unconstrained character forms that are not addressed by the training data or model architectures adopted here. With respect to language, the system is optimized specifically for Vietnamese and is evaluated only on Vietnamese text, though the cascaded architecture is language-agnostic and could in principle be extended to other languages with complex diacritical systems through corpus and vocabulary substitution. With respect to evaluation data, the detection and recognition components are each evaluated on held-out synthetic test sets derived from the same generation pipelines used for training, and the characterization of any residual domain gap relative to real scanned documents is based on qualitative analysis and is identified as a primary direction for future work.
 
-\subsection{Thesis Outline}
+\section{Content}
+
+The digitization of Vietnamese documents has become an urgent priority for administrative agencies and enterprises. Optical character recognition (OCR) serves as the key enabling technology, yet Vietnamese orthographic complexity poses substantial challenges, including a vast character inventory, minimal visual distinctions between diacritically similar characters, and diverse layouts with arbitrary text orientations.
+
+This bachelor thesis proposes a cascaded deep learning architecture of two independently optimized stages. The first employs a fine-tuned RT-DETR V2 detector with an auxiliary angle regression head using sine-cosine parameterization and Gaussian Wasserstein Distance loss. The second uses a fine-tuned PARSeq Vision Transformer adapted to Vietnamese through vocabulary extension to approximately 310 composite tokens, class-weighted cross-entropy loss, and a phonological validity mask at decoding. A perspective-corrected inter-stage interface converts oriented text regions into upright crops, linking angular localization quality to diacritical recognition accuracy.
+
+To address data scarcity, two independent synthetic generation pipelines are developed: a detection pipeline producing approximately 130,000 annotated document images across seven layout archetypes with full angular coverage from $0^\circ$ to $360^\circ$, and a recognition pipeline producing approximately 2,000,000 labeled crops across clean printed, augmented scene text, and mixed-background conditions.
+
+Experiments show the system substantially outperforms established baselines. RT-DETR achieves F1@0.50 of 0.501, versus 0.134 for EAST. PARSeq achieves a Character Error Rate of 10.18\% and Word Error Rate of 34.71\%, outperforming VietOCR, PaddleOCR, Tesseract, and EasyOCR. The system is deployed as a modular pipeline with component encapsulation facilitating future upgrades without full retraining.
+
+\section{Bachelor Thesis Outline}
 
 To systematically address the aforementioned objectives, this thesis is organized into five chapters as follows.
 
-\textbf{Chapter 1: Introduction} establishes the motivation for the work, surveys the demand for Vietnamese document digitization, characterizes the technical challenges that distinguish Vietnamese OCR from the general case, and introduces the proposed cascaded approach alongside the research objectives and scope.
+\textbf{General introduction} establishes the motivation for the work, surveys the demand for Vietnamese document digitization, characterizes the technical challenges that distinguish Vietnamese OCR from the general case, and introduces the proposed cascaded approach alongside the research objectives and scope.
 
-\textbf{Chapter 2: Related Works} surveys four areas of prior research that inform the proposed system: traditional OCR methods and their limitations, deep learning approaches to text detection and recognition with particular focus on the RT-DETR and PARSeq architectures, Vietnamese-specific OCR challenges arising from diacritical complexity and data scarcity, and representative real-world OCR application domains that contextualize the practical value of the system.
+\textbf{Chapter 1: Overview of text recognition problem} surveys four areas of prior research that inform the proposed system: traditional OCR methods and their limitations, deep learning approaches to text detection and recognition with particular focus on the RT-DETR and PARSeq architectures, Vietnamese-specific OCR challenges arising from diacritical complexity and data scarcity, and representative real-world OCR application domains that contextualize the practical value of the system.
 
-\textbf{Chapter 3: Methodology and Implementation} presents the complete technical design of the proposed system, covering the cascaded architecture and end-to-end pipeline design, the synthetic data generation pipelines for both detection and recognition stages, the model optimization strategies including the angle head design and GWD loss configuration for RT-DETR and the vocabulary extension and linguistic constraints for PARSeq, and the system integration connecting both components through the perspective-corrected inter-stage interface.
+\textbf{Chapter 2: Methodology and implementation} presents the complete technical design of the proposed system, covering the cascaded architecture and end-to-end pipeline design, the synthetic data generation pipelines for both detection and recognition stages, the model optimization strategies including the angle head design and GWD loss configuration for RT-DETR and the vocabulary extension and linguistic constraints for PARSeq, and the system integration connecting both components through the perspective-corrected inter-stage interface.
 
-\textbf{Chapter 4: Experiments} reports the experimental evaluation, including the experimental setup, the selected detection and recognition baselines, quantitative results on the Vietnamese document test sets, and a discussion of the results, identified limitations, and concrete directions for future improvement.
+\textbf{Chapter 3: Experiments and results} reports the experimental evaluation, including the experimental setup, the selected detection and recognition baselines, quantitative results on the Vietnamese document test sets, and a discussion of the results, identified limitations, and concrete directions for future improvement.
 
-\textbf{Chapter 5: Conclusions} summarizes the principal technical contributions of the thesis, reflects on how the proposed system addresses the challenges identified in this introduction, draws conclusions from the experimental findings, and outlines the practical value of the system for Vietnamese document digitization workflows.
+\textbf{Conclusions and future works} summarizes the principal technical contributions of the thesis, reflects on how the proposed system addresses the challenges identified in this introduction, draws conclusions from the experimental findings, and outlines the practical value of the system for Vietnamese document digitization workflows.

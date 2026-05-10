@@ -1,4 +1,13 @@
-\chapter{Introduction}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}  % ẩn mục con khỏi ToC
+\chapter*{GENERAL INTRODUCTION}
+\addcontentsline{toc}{chapter}{GENERAL INTRODUCTION}
+\markboth{GENERAL INTRODUCTION}{}
+
+\renewcommand{\thesection}{\arabic{section}}   % đánh số 1, 2, 3 thay vì 0.1, 0.2
+\setcounter{section}{0}
 
 \input{Chapter1/overview}
 \input{Chapter1/objective}
+
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+\renewcommand{\thesection}{\thechapter.\arabic{section}}
