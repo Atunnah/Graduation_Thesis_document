@@ -5,7 +5,7 @@ The Vietnamese OCR system is implemented entirely in Python 3.10 and relies on a
 \begin{table}[ht]
 \centering
 \scriptsize
-\caption[Principal software frameworks and libraries used in the Vietnamese OCR system]{\textit{Libraries are categorized by their primary role; entries marked ``Both stages'' contribute to the detection pipeline, recognition pipeline, or the shared inference interface. All packages are open-source and available via PyPI.}}
+\caption[Principal software frameworks and libraries used in the Vietnamese OCR system]{\textit{Principal software frameworks and libraries used in the Vietnamese OCR system}}
 \label{tab:frameworks}
 \begin{tabular}{lll}
 \hline
@@ -26,6 +26,8 @@ PyYAML & Configuration file parsing & Both stages \\
 \hline
 \end{tabular}
 \end{table}
+
+Libraries in this table are categorized by their primary role; entries marked ``Both stages'' contribute to the detection pipeline, recognition pipeline, or the shared inference interface. All packages are open-source and available via PyPI.
 
 The detection model is loaded and served through the Hugging Face Transformers library \cite{Wolf2020}, which provides the \texttt{RTDetrV2ForObjectDetection} architecture and the \texttt{AutoImageProcessor} for standardized input preprocessing. This integration allows the official pretrained model weights of the \texttt{PekingU/rtdetr\_v2\_r50vd} checkpoint to be loaded directly from the Hugging Face model hub and fine-tuned using the standard \texttt{Trainer} API, substantially reducing boilerplate code for training loop management, evaluation scheduling, and checkpoint saving. The auxiliary angle regression head is appended as a custom \texttt{nn.ModuleList} attached to the base detector, with weight loading handled through a custom remapping layer that reconciles naming differences between the pretrained checkpoint format and the extended model architecture.
 
@@ -54,8 +56,6 @@ python pipeline.py \
     --rec_config  path/to/infer_config.yaml \
     --output_dir  ./pipeline_output
 \end{verbatim}
-
-\vspace{2cm}
 
 Both models are loaded onto the available CUDA device. The detector is called with confidence threshold 0.5 and IoU threshold 0.5. Surviving detections are sorted vertically and grouped into logical text lines using the 40\% overlap criterion from Section \ref{sec:end_to_end_pipeline_design}; within each group, crops are processed left to right and joined with tab separators. Two output files are produced: a Markdown transcript and a visualization image with bounding boxes in red and recognized text in blue. The full procedure is formalized in Algorithm \ref{alg:pipeline_execution}.
 

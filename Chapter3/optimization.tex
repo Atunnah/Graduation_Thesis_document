@@ -3,7 +3,7 @@
 The two-stage cascaded architecture requires independent optimization of the RT-DETR detection model and the PARSeq recognition model, each of which presents distinct training challenges arising from their architectural differences and the domain-specific requirements of Vietnamese text. This section details the fine-tuning strategies, hyperparameter configurations, and architectural modifications applied to each component, explaining the rationale for each design decision in relation to the Vietnamese document detection and recognition objectives.
 
 \subsection{Optimizing RT-DETR}
-The RT-DETR detection model is initialized from \texttt{PekingU/rtdetr\_v2\_r50vd} checkpoint \cite{Zhao2024}, which provides a ResNet-50 backbone pretrained on ImageNet \cite{He2015} and a transformer encoder-decoder pretrained on the COCO object detection benchmark \cite{Lin2015}. Fine-tuning from this checkpoint rather than training from scratch substantially reduces the data and compute requirements, as the backbone has already learned rich multi-scale visual representations transferable to text region localization. The primary adaptations required for Vietnamese text detection are the extension of the output head to support oriented bounding box prediction, the introduction of GWD loss alongside the standard detection losses, and a carefully staged learning rate schedule that avoids catastrophic forgetting of the pretrained backbone weights.
+The RT-DETR detection model is initialized from the publicly available pretrained \texttt{PekingU/rtdetr\_v2\_r50vd} checkpoint \cite{Zhao2024}, which provides a ResNet-50 backbone pretrained on ImageNet \cite{He2015} and a transformer encoder-decoder pretrained on the COCO object detection benchmark \cite{Lin2015}. Fine-tuning from this checkpoint rather than training from scratch substantially reduces the data and compute requirements, as the backbone has already learned rich multi-scale visual representations transferable to text region localization. The primary adaptations required for Vietnamese text detection are the extension of the output head to support oriented bounding box prediction, the introduction of GWD loss alongside the standard detection losses, and a carefully staged learning rate schedule that avoids catastrophic forgetting of the pretrained backbone weights.
 
 \subsubsection{Angle Prediction Head Architecture}
 The standard RT-DETR V2 decoder produces axis-aligned bounding box predictions through a shared regression head applied to each decoder query embedding. To extend this to oriented bounding box prediction, an auxiliary angle regression head is appended in parallel to the existing classification and bounding box heads, without modifying any pretrained weights. The angle head is implemented as a three-layer MLP applied independently to each decoder layer's query hidden state:
@@ -14,7 +14,7 @@ $$ \mathbf{h}_2 = \text{Dropout}_{0.3}(\text{ReLU}(\mathbf{W}_2 \mathbf{h}_1 + \
 $$ \mathbf{y} = \frac{\mathbf{W}_3 \mathbf{h}_2 + \mathbf{b}_3}{\|\mathbf{W}_3 \mathbf{h}_2 + \mathbf{b}_3\|_2} $$
 where $\mathbf{W}_1 \in \mathbb{R}^{d_{model} \times d_{model}}$, $\mathbf{W}_2 \in \mathbb{R}^{d_{model}/2 \times d_{model}}$, and $\mathbf{W}_3 \in \mathbb{R}^{2 \times d_{model}/2}$ are the learnable weight matrices of the linear layers, and $\mathbf{b}_1, \mathbf{b}_2, \mathbf{b}_3$ are their respective biases. The final L2-normalization yields a unit vector $\mathbf{y} = (\sin\theta, \cos\theta)$.
 
-The two-dimensional output is L2-normalized to produce a unit vector $(\sin\theta, \cos\theta)$ representing the predicted text line orientation. This sine-cosine parameterization avoids the angular discontinuity that arises at the $0^\circ/360^\circ$ boundary when scalar angle regression is used, ensuring smooth gradient flow across all orientations encountered in the training set. Dropout with probability 0.3 is applied within the angle MLP to prevent overfitting, given that the angle head is trained from random initialization while the rest of the model benefits from pretrained weights. One angle head instance is instantiated per decoder layer, enabling auxiliary supervision at each intermediate decoding stage in addition to the final output.
+The output is L2-normalized to produce a unit vector $(\sin\theta, \cos\theta)$ representing the predicted text line orientation. This sine-cosine parameterization avoids the angular discontinuity that arises at the $0^\circ/360^\circ$ boundary when scalar angle regression is used, ensuring smooth gradient flow across all orientations encountered in the training set. Dropout with probability 0.3 is applied within the angle MLP to prevent overfitting, given that the angle head is trained from random initialization while the rest of the model benefits from pretrained weights. One angle head instance is instantiated per decoder layer, enabling auxiliary supervision at each intermediate decoding stage in addition to the final output.
 
 \subsubsection{Loss Function Configuration}
 The total training loss combines five terms, each controlling a distinct aspect of the detection objective. The composite loss is:
@@ -32,16 +32,17 @@ The elevated weight on GWD loss reflects its importance as the primary supervisi
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.95\linewidth]{images/rtdetr_loss_curves.png}
-    \caption[Training loss curves for individual components]{\textit{Training loss curves illustrating the convergence behavior of the five individual loss components over the training steps. The plots show the angular loss, generalized IoU loss, and bounding box loss (top row, left to right), along with the classification loss and GWD loss (bottom row, left to right).}}
+    \caption[Training loss curves for individual components]{\textit{Training loss curves for the five individual loss components}}
     \label{fig:rtdetr_loss_curves}
 \end{figure}
+
+\newpage
+This figure illustrates the convergence behavior of the five individual loss components over the training steps. The top row shows, from left to right, the angular loss, generalized IoU loss, and bounding box loss, while the bottom row presents the classification loss and GWD loss.
 
 \subsubsection{Differential Learning Rate Schedule}
 A key challenge in fine-tuning large pretrained detection models is balancing the need to adapt to the target domain against the risk of overwriting useful pretrained representations. This work addresses this through a three-tier differential learning rate strategy:
 
-The base learning rate is set to $\eta = 1 \times 10^{-4}$ with a cosine annealing schedule over 100 epochs and a linear warmup over the first 500 optimization steps. The backbone parameters receive $\eta_{\text{backbone}} = \eta \times 0.1 = 1 \times 10^{-5}$, an order of magnitude lower than the base rate, to preserve ImageNet-pretrained feature representations while allowing gradual domain adaptation. The angle head parameters, trained from random initialization, receive $\eta_{\text{angle}} = \eta \times 0.3 = 3 \times 10^{-5}$, lower than the base rate but higher than the backbone rate, reflecting the need for stable convergence without large initial gradient steps. All other parameters, including the transformer encoder-decoder, use the base learning rate.
-
-The AdamW optimizer is used with weight decay $5 \times 10^{-4}$ and gradient clipping at a maximum norm of 1.0 to prevent gradient explosion in the transformer attention layers.
+The base learning rate is set to $\eta = 1 \times 10^{-4}$ with a cosine annealing schedule over 100 epochs and a linear warmup over the first 500 optimization steps. The backbone parameters receive $\eta_{\text{backbone}} = \eta \times 0.1 = 1 \times 10^{-5}$, an order of magnitude lower than the base rate, to preserve ImageNet-pretrained feature representations while allowing gradual domain adaptation. The angle head parameters, trained from random initialization, receive $\eta_{\text{angle}} = \eta \times 0.3 = 3 \times 10^{-5}$, lower than the base rate but higher than the backbone rate, reflecting the need for stable convergence without large initial gradient steps. All other parameters, including the transformer encoder-decoder, use the base learning rate. The AdamW optimizer is used with weight decay $5 \times 10^{-4}$ and gradient clipping at a maximum norm of 1.0 to prevent gradient explosion in the transformer attention layers.
 
 \subsubsection{Progressive Backbone Unfreezing}
 To protect pretrained backbone representations during early training, the backbone is frozen entirely from the very first training step. During this initial frozen phase, only the transformer encoder-decoder and the newly initialized angle head receive gradient updates, allowing the detection head to adapt to the single-class text detection task before the backbone parameters begin to shift. 
@@ -52,7 +53,7 @@ The training is conducted with an effective batch size of 16, achieved through a
 
 \begin{table}[H]
 \centering
-\footnotesize 
+\scriptsize 
 \caption{RT-DETR fine-tuning hyperparameter configuration}
 \label{tab:rtdetr_config}
 \begin{tabular}{ll}
@@ -86,7 +87,7 @@ The PARSeq model is configured with an input image size of $48 \times 1024$ pixe
 The encoder consists of 12 transformer layers with 8 attention heads and an MLP expansion ratio of 6, producing a 384-dimensional embedding for each visual token. The decoder uses 1 transformer layer with 6 attention heads and a maximum output sequence length of 164 characters, sufficient to accommodate the longest Vietnamese text line strings in the training corpus. The maximum label length at the tokenizer level is set to 164, with autoregressive decoding enabled and one iterative refinement pass at inference time. A dropout rate of 0.1 is applied throughout both encoder and decoder to regularize training.
 
 \subsubsection{Vocabulary Expansion for Vietnamese}
-The standard PARSeq vocabulary covers 94 printable ASCII characters plus special tokens. Vietnamese requires a much larger vocabulary to represent all composite glyphs arising from the combination of base characters, vowel modification diacritics, and tonal markers. The extended vocabulary is constructed by enumerating unique composite characters appearing in the Vietnamese training corpus, yielding approximately 232 Vietnamese-specific characters plus the original Latin character set, digits, and punctuation. The complete character set covers all phonologically valid combinations of the seventeen modified vowel forms with the six tonal markers, as described in Section \ref{sec:diacritical_marks_and_tonal_complexity}, treating each composite glyph as an atomic vocabulary token.
+The standard PARSeq vocabulary covers 94 printable ASCII characters plus special tokens. Vietnamese requires a much larger vocabulary to represent all composite glyphs arising from the combination of base characters, vowel modification diacritics, and tonal markers. The extended vocabulary is constructed by enumerating unique composite characters appearing in the Vietnamese training corpus, yielding approximately 232 Vietnamese-specific characters plus the original Latin character set, digits, and punctuation. The complete character set covers all phonologically valid combinations of the seventeen modified vowel forms with the six tonal markers, as described in General Introduction, treating each composite glyph as an atomic vocabulary token.
 
 The vocabulary extension is implemented by replacing the output projection layer of the PARSeq decoder with a new linear layer whose output dimension matches the extended vocabulary size. The weights of the new projection layer corresponding to characters present in the original vocabulary are initialized from the pretrained weights, while weights for new Vietnamese characters are initialized randomly. This warm-start initialization allows the model to retain its pretrained decoding capability for Latin characters while gradually learning the new Vietnamese character distributions through fine-tuning \cite{Bautista2022}.
 
@@ -100,7 +101,8 @@ The model is trained with a 90/10 train-validation split over the 2,000,000-imag
 \subsubsection{Permutation-based Training Objective}
 The training objective follows PARSeq's permutation language modeling formulation \cite{Bautista2022}. For each training batch, a set of permutations of the output character sequence is sampled: the standard left-to-right order is always included, and up to $\lfloor N_{\text{perm}} / 2 \rfloor$ additional random permutations are sampled, each paired with its reverse to form complementary pairs, yielding $N_{\text{perm}} = 8$ permutations in total per batch. For each permutation, a causal attention mask is generated that restricts each decoder query to attend only to the characters that precede it in that permutation order, and the cross-entropy loss is computed over all valid output positions.
 
-The EOS token is treated specially: it receives full supervision under the first two permutations, after which it is replaced by the padding token for subsequent permutations. This avoids the EOS position dominating the gradient over the many permutation iterations. The total loss across all permutations is accumulated and normalized by the total number of valid non-padding token positions:
+The EOS token receives full supervision for the first two permutations before being replaced by the padding token. This prevents the EOS position from dominating the gradient across permutations. The total loss is normalized by the number of valid non-padding token positions:
+
 \begin{equation}
 \mathcal{L}_{\text{PARSeq}} = \frac{1}{N_{\text{valid}}} \sum_{p=1}^{N_{\text{perm}}} N_p \cdot \mathcal{L}_{\text{CE}}^{(p)}
 \end{equation}
@@ -118,9 +120,11 @@ where $T$ is the total number of training epochs and $t_{\text{warmup}}$ is the 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\linewidth]{images/parseq_curves.png}
-    \caption[Training and validation curves for the PARSeq model]{\textit{Training and validation metrics illustrating the learning behavior of the PARSeq model over training steps. The plots display the training loss and validation loss (top row, left to right), along with the Character Error Rate (CER, blue line) and Word Error Rate (WER, orange line) evaluated on the validation set (bottom row).}}
+    \caption[Training and validation curves for the PARSeq model]{\textit{Training and validation curves for the PARSeq model}}
     \label{fig:parseq_curves}
 \end{figure}
+
+The learning behavior of the PARSeq model over training steps illustrates the learning behavior of the PARSeq model over training steps. The top row displays the training loss and validation loss (left to right), while the bottom row shows the Character Error Rate (CER, blue line) and Word Error Rate (WER, orange line) evaluated on the validation set.
 
 \subsubsection{Linguistic Constraints via Vocabulary Filtering}
 A key optimization for Vietnamese recognition is the application of linguistic constraints that restrict the decoder's output to phonologically valid Vietnamese character sequences. Not all combinations of base character and diacritical marks are valid in Vietnamese phonology: for example, the character \textit{q} cannot appear with tonal marks because it only occurs in the consonant cluster \textit{qu}, and certain vowel-tone combinations are phonologically impossible in any Vietnamese syllable. These constraints are encoded as a validity mask over the output vocabulary, applied as a log-probability bias at decoding time to suppress the generation of invalid composite characters.
